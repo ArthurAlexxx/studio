@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image-1');
   const videoPlaceholderImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
   
   return (
@@ -35,16 +34,14 @@ export default function Home() {
                  <p className="text-sm text-muted-foreground">Economize tempo e alcance seus objetivos com planos gerados em segundos.</p>
               </div>
               <div className="relative h-80 w-full overflow-hidden rounded-2xl shadow-2xl lg:h-auto animate-fade-in" style={{animationDelay: '200ms'}}>
-                {heroImage && (
-                    <Image
-                      src={heroImage.imageUrl}
-                      alt={heroImage.description}
-                      fill
-                      className="object-cover"
-                      priority
-                      data-ai-hint={heroImage.imageHint}
-                    />
-                )}
+                <Image
+                  src="/hero-illustration.png"
+                  alt="Ilustração de uma mulher usando um aplicativo de nutrição"
+                  fill
+                  className="object-cover"
+                  priority
+                  data-ai-hint="health app illustration"
+                />
                </div>
             </div>
           </div>
