@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
-type UserProfile = User & { full_name: string };
+type UserProfile = User & { user_metadata: { full_name: string } };
 
 /**
  * @fileoverview A página principal do Dashboard.
@@ -51,21 +51,10 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserAndData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
+      
       if (session) {
-        const currentUser = session.user;
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('user_id', currentUser.id)
-          .single();
-
-        const userData: UserProfile = {
-          ...currentUser,
-          full_name: profile?.name || currentUser.email || 'Usuário'
-        };
-
-        setUser(userData);
+        const currentUser = session.user as UserProfile;
+        setUser(currentUser);
         await fetchMeals(currentUser.id);
       }
       setLoading(false); 
@@ -74,36 +63,14 @@ export default function DashboardPage() {
     fetchUserAndData();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setLoading(true);
       if (event === 'SIGNED_IN' && session) {
-        const currentUser = session.user;
-        supabase.from('profiles').select('name').eq('user_id', currentUser.id).single()
-          .then(({ data: profile }) => {
-            const userData: UserProfile = {
-              ...currentUser,
-              full_name: profile?.name || currentUser.email || 'Usuário'
-            };
-            setUser(userData);
-            return fetchMeals(currentUser.id);
-          })
-          .finally(() => setLoading(false));
+        const currentUser = session.user as UserProfile;
+        setUser(currentUser);
+        fetchMeals(currentUser.id).finally(() => setLoading(false));
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setMeals([]);
         setLoading(false);
-      } else if (event === 'INITIAL_SESSION' && session) {
-        // Handle case where session is already available on load
-         const currentUser = session.user;
-        supabase.from('profiles').select('name').eq('user_id', currentUser.id).single()
-          .then(({ data: profile }) => {
-            const userData: UserProfile = {
-              ...currentUser,
-              full_name: profile?.name || currentUser.email || 'Usuário'
-            };
-            setUser(userData);
-            return fetchMeals(currentUser.id);
-          })
-          .finally(() => setLoading(false));
       } else if (!session) {
          setLoading(false);
       }

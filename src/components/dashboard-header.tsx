@@ -12,7 +12,7 @@ import { User } from '@supabase/supabase-js';
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
-  user: (User & { full_name: string }) | null;
+  user: (User & { user_metadata: { full_name: string } }) | null;
 }
 
 export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderProps) {
@@ -23,9 +23,11 @@ export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderPr
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/');
+    router.refresh();
   };
 
   const userId = user?.id || null;
+  const userName = user?.user_metadata?.full_name || user?.email;
 
   return (
     <>
@@ -47,7 +49,7 @@ export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderPr
               {user && (
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <UserIcon className="h-5 w-5 text-primary" />
-                    <span>Olá, {user.full_name}!</span>
+                    <span>Olá, {userName}!</span>
                 </div>
               )}
             <Button variant="outline" onClick={handleSignOut}>

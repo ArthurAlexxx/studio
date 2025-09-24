@@ -49,8 +49,6 @@ export default function RegisterPage() {
         email: values.email,
         password: values.password,
         options: {
-            // Este data é para o gatilho do Supabase, se houver um.
-            // Para exibição no app, salvaremos na tabela 'profiles'
             data: {
                 full_name: values.name,
             }
@@ -59,13 +57,6 @@ export default function RegisterPage() {
 
       if (error) throw error;
       if (!data.user) throw new Error('Não foi possível criar o usuário.');
-
-      // Inserir na tabela de perfis
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({ user_id: data.user.id, name: values.name, email: values.email });
-      
-      if (profileError) throw profileError;
 
       setSuccess(true);
     } catch (error: any) {
@@ -78,6 +69,7 @@ export default function RegisterPage() {
   if (success) {
       setTimeout(() => {
           router.push('/dashboard');
+          router.refresh();
       }, 2000);
   }
 
