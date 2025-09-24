@@ -105,7 +105,7 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
             <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
                     <FormLabel className="font-semibold">Calcular proteína automaticamente</FormLabel>
-                    <p className="text-xs text-muted-foreground">Recomendado (30% das calorias)</p>
+                    <p className="text-xs text-muted-foreground">Calcula 30% das calorias (recomendado 10-35%)</p>
                 </div>
                 <Switch
                     checked={autoCalculate}
