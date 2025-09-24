@@ -67,11 +67,14 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
         }).then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const contentType = response.headers.get("content-type");
-            return contentType && contentType.includes("application/json") ? response.json() : null;
+            if (contentType && contentType.includes("application/json")) {
+                return response.json();
+            }
+            return null; // Return null for non-json responses
         });
       });
       
-      const results: (MealData[] | null) = (await Promise.all(requests)).flat().filter(r => r);
+      const results = (await Promise.all(requests)).flat().filter((r): r is MealData => r !== null);
 
       if (!results || results.length === 0) {
         toast({
@@ -83,12 +86,14 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
       }
       
       const combinedMealData: MealData = results.reduce((acc, meal) => {
-        acc.alimentos.push(...meal.alimentos);
-        acc.totais.calorias += meal.totais.calorias;
-        acc.totais.proteinas += meal.totais.proteinas;
-        acc.totais.carboidratos += meal.totais.carboidratos;
-        acc.totais.gorduras += meal.totais.gorduras;
-        acc.totais.fibras += meal.totais.fibras;
+        if (meal && meal.alimentos && meal.totais) {
+            acc.alimentos.push(...meal.alimentos);
+            acc.totais.calorias += meal.totais.calorias;
+            acc.totais.proteinas += meal.totais.proteinas;
+            acc.totais.carboidratos += meal.totais.carboidratos;
+            acc.totais.gorduras += meal.totais.gorduras;
+            acc.totais.fibras += meal.totais.fibras;
+        }
         return acc;
       }, {
           alimentos: [],
@@ -267,4 +272,5 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
         </Form>
       </DialogContent>
     </Dialog>
-  
+  );
+}
