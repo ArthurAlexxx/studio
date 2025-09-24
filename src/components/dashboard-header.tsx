@@ -2,19 +2,20 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { BarChart, ChevronLeft, Plus, Users, LogOut } from 'lucide-react';
+import { BarChart, ChevronLeft, Plus, Users, LogOut, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
 import { useState } from 'react';
 import type { MealData } from '@/types/meal';
+import { User } from '@supabase/supabase-js';
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
-  userId: string | null;
+  user: (User & { full_name: string }) | null;
 }
 
-export default function DashboardHeader({ onMealAdded, userId }: DashboardHeaderProps) {
+export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderProps) {
   const router = useRouter();
   const supabase = createClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +24,8 @@ export default function DashboardHeader({ onMealAdded, userId }: DashboardHeader
     await supabase.auth.signOut();
     router.push('/');
   };
+
+  const userId = user?.id || null;
 
   return (
     <>
@@ -41,15 +44,17 @@ export default function DashboardHeader({ onMealAdded, userId }: DashboardHeader
               </div>
           </div>
           <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Users className="h-5 w-5" />
-                  <span>1.247 usuários online</span>
-              </div>
+              {user && (
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <UserIcon className="h-5 w-5 text-primary" />
+                    <span>Olá, {user.full_name}!</span>
+                </div>
+              )}
             <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </Button>
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Button onClick={() => setIsModalOpen(true)} disabled={!userId}>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Refeição
             </Button>

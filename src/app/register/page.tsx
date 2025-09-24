@@ -45,16 +45,28 @@ export default function RegisterPage() {
     setError(null);
     setSuccess(false);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
+            // Este data é para o gatilho do Supabase, se houver um.
+            // Para exibição no app, salvaremos na tabela 'profiles'
             data: {
                 full_name: values.name,
             }
         }
       });
+
       if (error) throw error;
+      if (!data.user) throw new Error('Não foi possível criar o usuário.');
+
+      // Inserir na tabela de perfis
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({ user_id: data.user.id, name: values.name, email: values.email });
+      
+      if (profileError) throw profileError;
+
       setSuccess(true);
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o registro.');
