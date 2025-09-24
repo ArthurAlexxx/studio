@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const videoPlaceholderImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
+  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image-1');
   
   return (
     <div className="flex min-h-dvh flex-col bg-muted/20">
@@ -34,14 +35,16 @@ export default function Home() {
                  <p className="text-sm text-muted-foreground">Economize tempo e alcance seus objetivos com planos gerados em segundos.</p>
               </div>
               <div className="relative h-80 w-full overflow-hidden rounded-2xl shadow-2xl lg:h-auto animate-fade-in" style={{animationDelay: '200ms'}}>
-                <Image
-                  src="https://storage.googleapis.com/project-spark-files/115a3a78-21d9-48c6-a51f-50849c417b1d"
-                  alt="Ilustração de uma mulher usando um aplicativo de nutrição"
-                  fill
-                  className="object-cover"
-                  priority
-                  data-ai-hint="health app illustration"
-                />
+                {heroImage && (
+                  <Image
+                    src={heroImage.imageUrl}
+                    alt={heroImage.description}
+                    fill
+                    className="object-cover"
+                    priority
+                    data-ai-hint={heroImage.imageHint}
+                  />
+                )}
                </div>
             </div>
           </div>
