@@ -57,7 +57,6 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
           alimento: food.name,
           porcao: food.portion,
           unidade: food.unit,
-          // calorias: 0, // Mocked value, as per user's example it's not in the form
         };
         return fetch(webhookUrl, {
           method: 'POST',
@@ -69,14 +68,28 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.json();
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json();
+            } else {
+                return null;
+            }
         });
       });
       
       const results = await Promise.all(requests);
       
-      // The webhook seems to return an array with one element which is the object we want.
-      const processedResults = results.flat();
+      const processedResults = results.filter(r => r).flat();
+      
+      if (processedResults.length === 0) {
+        toast({
+          title: 'Nenhum dado nutricional retornado',
+          description: 'O serviço não retornou informações para os alimentos informados.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       onMealAdded(processedResults);
 
       toast({
