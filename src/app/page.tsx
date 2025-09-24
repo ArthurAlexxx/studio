@@ -35,7 +35,7 @@ export default function Home() {
               </div>
               <div className="relative h-80 w-full overflow-hidden rounded-2xl shadow-2xl lg:h-auto animate-fade-in" style={{animationDelay: '200ms'}}>
                 <Image
-                  src="/hero-illustration.png"
+                  src="https://storage.googleapis.com/project-spark-files/115a3a78-21d9-48c6-a51f-50849c417b1d"
                   alt="Ilustração de uma mulher usando um aplicativo de nutrição"
                   fill
                   className="object-cover"
