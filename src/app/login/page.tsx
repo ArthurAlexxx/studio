@@ -38,19 +38,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      
-      if (!userCredential.user.emailVerified) {
-        toast({
-          title: "E-mail não verificado",
-          description: "Por favor, verifique seu e-mail antes de fazer login. Cheque sua caixa de entrada.",
-          variant: "destructive",
-          duration: 6000,
-        });
-        await auth.signOut();
-        setLoading(false);
-        return;
-      }
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       
       toast({
         title: "Sucesso!",

@@ -12,8 +12,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase/client';
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
     name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -27,8 +28,8 @@ const formSchema = z.object({
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,25 +48,20 @@ export default function RegisterPage() {
       const user = userCredential.user;
 
       if (user) {
-        // Atualiza o perfil do usuário no Firebase Auth
         await updateProfile(user, { displayName: values.name });
 
-        // Envia o e-mail de verificação
-        await sendEmailVerification(user);
-
-        // Cria um documento para o usuário no Firestore
         await setDoc(doc(db, "users", user.uid), {
             fullName: values.name,
             email: values.email,
         });
 
-        setSuccess(true);
         toast({
-            title: "Registro quase completo!",
-            description: "Enviamos um e-mail de confirmação para você. Por favor, verifique sua caixa de entrada.",
-            duration: 6000,
+            title: "Registro completo!",
+            description: "Sua conta foi criada com sucesso. Redirecionando para o login...",
+            duration: 5000,
         });
         
+        router.push('/login');
       } else {
         throw new Error("Não foi possível criar o usuário.");
       }
@@ -95,74 +91,66 @@ export default function RegisterPage() {
           <CardDescription>É rápido e fácil. Comece sua jornada saudável agora.</CardDescription>
         </CardHeader>
         <CardContent>
-          {success ? (
-            <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
-              <CheckCircle className="h-16 w-16 text-green-500" />
-              <h3 className="text-xl font-semibold text-foreground">Confirme seu E-mail</h3>
-              <p className="text-muted-foreground">Enviamos um link de verificação para seu e-mail. Por favor, clique no link para ativar sua conta e poder fazer o login.</p>
-            </div>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleRegister)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Seu nome" {...field} disabled={loading} className="rounded-xl"/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="seu@email.com" {...field} disabled={loading} className="rounded-xl"/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} disabled={loading} className="rounded-xl"/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirmar Senha</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Repita sua senha" {...field} disabled={loading} className="rounded-xl"/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full !mt-8 rounded-xl" size="lg" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  Criar Conta Gratuitamente
-                </Button>
-              </form>
-            </Form>
-          )}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleRegister)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Seu nome" {...field} disabled={loading} className="rounded-xl"/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="seu@email.com" {...field} disabled={loading} className="rounded-xl"/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} disabled={loading} className="rounded-xl"/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Repita sua senha" {...field} disabled={loading} className="rounded-xl"/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full !mt-8 rounded-xl" size="lg" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Criar Conta Gratuitamente
+              </Button>
+            </form>
+          </Form>
         </CardContent>
         <CardFooter className="flex-col items-center gap-4">
            <p className="text-sm text-muted-foreground">
