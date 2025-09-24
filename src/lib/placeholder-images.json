@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image-1",
-      "description": "Illustration of a woman using a nutrition app on her phone, surrounded by healthy foods.",
-      "imageUrl": "https://images.unsplash.com/photo-1641301547846-2cf73f58fdca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxoZWFsdGglMjBhcHAlMjBpbGx1c3RyYXRpb258ZW58MHx8fHwxNzU4NzQ1NjM5fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "health app illustration"
+      "description": "A vibrant assortment of healthy foods, symbolizing nutrition and well-being.",
+      "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxoZWFsdGh5JTIwZm9vZHxlbnwwfHx8fDE3NTg5NjUwODR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "healthy food"
     },
     {
       "id": "recipe-1",
