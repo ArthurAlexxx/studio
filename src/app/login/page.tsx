@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,8 +43,11 @@ export default function LoginPage() {
         password: values.password,
       });
       if (error) throw error;
-      router.push('/');
-      router.refresh(); // Forces a refresh to update user state in header
+      toast({
+        title: "Sucesso!",
+        description: "Login feito com sucesso!",
+      });
+      router.push('/dashboard');
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o login.');
     } finally {
@@ -51,14 +56,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-secondary/50 p-4">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-gray-50 p-4">
        <div className="absolute top-8 left-8">
             <Link href="/" className="flex items-center gap-2 text-foreground transition-colors hover:text-primary">
                 <Leaf className="h-7 w-7 text-primary" />
                 <span className="text-2xl font-bold">NutriSmart</span>
             </Link>
         </div>
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md shadow-xl rounded-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Acesse sua Conta</CardTitle>
           <CardDescription>Bem-vindo de volta! Insira seus dados para continuar.</CardDescription>
@@ -78,6 +83,7 @@ export default function LoginPage() {
                         placeholder="seu@email.com"
                         {...field}
                         disabled={loading}
+                        className="rounded-xl"
                       />
                     </FormControl>
                     <FormMessage />
@@ -96,6 +102,7 @@ export default function LoginPage() {
                         placeholder="Sua senha"
                         {...field}
                         disabled={loading}
+                        className="rounded-xl"
                       />
                     </FormControl>
                     <FormMessage />
@@ -103,7 +110,7 @@ export default function LoginPage() {
                 )}
               />
                {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-              <Button type="submit" className="w-full !mt-8" size="lg" disabled={loading}>
+              <Button type="submit" className="w-full !mt-8 rounded-xl" size="lg" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 Entrar
               </Button>

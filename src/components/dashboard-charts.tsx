@@ -1,16 +1,16 @@
 'use client';
 
-import { Bar, BarChart, CartesianGrid, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
 import { type ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 const weeklyCaloriesData = [
-  { day: 'Seg', calories: 2200, goal: 2000 },
-  { day: 'Ter', calories: 1980, goal: 2000 },
-  { day: 'Qua', calories: 2150, goal: 2000 },
-  { day: 'Qui', calories: 2050, goal: 2000 },
-  { day: 'Sex', calories: 2300, goal: 2000 },
-  { day: 'Sáb', calories: 2500, goal: 2000 },
-  { day: 'Dom', calories: 2100, goal: 2000 },
+  { day: 'Seg', calories: 0 },
+  { day: 'Ter', calories: 0 },
+  { day: 'Qua', calories: 0 },
+  { day: 'Qui', calories: 0 },
+  { day: 'Sex', calories: 0 },
+  { day: 'Sáb', calories: 0 },
+  { day: 'Dom', calories: 0 },
 ];
 
 const caloriesChartConfig = {
@@ -18,16 +18,12 @@ const caloriesChartConfig = {
     label: 'Calorias',
     color: 'hsl(var(--chart-1))',
   },
-  goal: {
-    label: 'Meta',
-    color: 'hsl(var(--chart-2))',
-  },
 } satisfies ChartConfig;
 
 const macrosData = [
-  { name: 'Proteínas', value: 120, fill: 'hsl(var(--chart-1))' },
-  { name: 'Carboidratos', value: 250, fill: 'hsl(var(--chart-2))' },
-  { name: 'Gorduras', value: 70, fill: 'hsl(var(--chart-3))' },
+  { name: 'Proteínas', value: 40, fill: 'hsl(var(--chart-1))' },
+  { name: 'Carboidratos', value: 40, fill: 'hsl(var(--chart-2))' },
+  { name: 'Gorduras', value: 20, fill: 'hsl(var(--chart-3))' },
 ];
 
 const macrosChartConfig = {
@@ -52,13 +48,18 @@ export function DashboardCharts({ chartType }: { chartType: 'calories' | 'macros
   if (chartType === 'calories') {
     return (
       <ChartContainer config={caloriesChartConfig} className="min-h-[200px] w-full">
-        <ResponsiveContainer width="100%" height={350}>
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={weeklyCaloriesData} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
-            <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-            <Bar dataKey="calories" fill="var(--color-calories)" radius={4}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3"/>
+            <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} stroke="#888888" />
+            <YAxis tickLine={false} axisLine={false} tickMargin={10} stroke="#888888" />
+            <Tooltip
+                contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc' }}
+                labelStyle={{ color: 'black' }}
+                itemStyle={{ color: 'black' }}
+                cursor={{fill: 'rgba(206, 206, 206, 0.2)'}}
+            />
+            <Bar dataKey="calories" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]}>
               <LabelList dataKey="calories" position="top" offset={8} className="fill-foreground" fontSize={12} />
             </Bar>
           </BarChart>
@@ -69,7 +70,7 @@ export function DashboardCharts({ chartType }: { chartType: 'calories' | 'macros
 
   if (chartType === 'macros') {
     return (
-      <ChartContainer config={macrosChartConfig} className="mx-auto aspect-square max-h-[350px]">
+      <ChartContainer config={macrosChartConfig} className="mx-auto aspect-square max-h-[300px]">
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
@@ -77,12 +78,19 @@ export function DashboardCharts({ chartType }: { chartType: 'calories' | 'macros
               data={macrosData}
               dataKey="value"
               nameKey="name"
+              cx="50%"
+              cy="50%"
               innerRadius={60}
-              strokeWidth={5}
+              outerRadius={80}
+              strokeWidth={2}
+              paddingAngle={5}
             >
+               {macrosData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
               <LabelList
                 dataKey="name"
-                className="fill-background text-sm font-medium"
+                className="fill-foreground text-sm font-medium"
                 stroke="none"
               />
             </Pie>

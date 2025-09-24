@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Leaf, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -23,6 +24,7 @@ const formSchema = z.object({
 });
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -60,26 +62,32 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+  
+  if (success) {
+      setTimeout(() => {
+          router.push('/dashboard');
+      }, 2000);
+  }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-secondary/50 p-4">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-gray-50 p-4">
       <div className="absolute top-8 left-8">
             <Link href="/" className="flex items-center gap-2 text-foreground transition-colors hover:text-primary">
                 <Leaf className="h-7 w-7 text-primary" />
                 <span className="text-2xl font-bold">NutriSmart</span>
             </Link>
         </div>
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md shadow-xl rounded-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Crie sua Conta</CardTitle>
           <CardDescription>É rápido e fácil. Comece sua jornada saudável agora.</CardDescription>
         </CardHeader>
         <CardContent>
           {success ? (
-            <div className="flex flex-col items-center justify-center text-center text-green-600 space-y-4 py-8">
+            <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
               <CheckCircle className="h-16 w-16 text-green-500" />
               <h3 className="text-xl font-semibold text-foreground">Registro realizado com sucesso!</h3>
-              <p className="text-muted-foreground">Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada para ativar sua conta.</p>
+              <p className="text-muted-foreground">Você será redirecionado para o seu dashboard em instantes.</p>
             </div>
           ) : (
             <Form {...form}>
@@ -91,7 +99,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Nome Completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Seu nome" {...field} disabled={loading} />
+                        <Input placeholder="Seu nome" {...field} disabled={loading} className="rounded-xl"/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -104,7 +112,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="seu@email.com" {...field} disabled={loading} />
+                        <Input type="email" placeholder="seu@email.com" {...field} disabled={loading} className="rounded-xl"/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -117,7 +125,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} disabled={loading} />
+                        <Input type="password" placeholder="Mínimo de 6 caracteres" {...field} disabled={loading} className="rounded-xl"/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -130,14 +138,14 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Confirmar Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Repita sua senha" {...field} disabled={loading} />
+                        <Input type="password" placeholder="Repita sua senha" {...field} disabled={loading} className="rounded-xl"/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-                <Button type="submit" className="w-full !mt-8" size="lg" disabled={loading}>
+                <Button type="submit" className="w-full !mt-8 rounded-xl" size="lg" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   Criar Conta Gratuitamente
                 </Button>
