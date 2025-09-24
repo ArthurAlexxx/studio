@@ -45,12 +45,12 @@ export default function LoginPage() {
       if (error) throw error;
       toast({
         title: "Sucesso!",
-        description: "Login feito com sucesso!",
+        description: "Login feito com sucesso! Redirecionando...",
       });
       router.push('/dashboard');
+      router.refresh(); // Garante que a página do dashboard recarregue os dados da nova sessão.
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o login.');
-    } finally {
       setLoading(false);
     }
   };
