@@ -1,7 +1,7 @@
 // src/lib/firebase/client.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore/lite";
 
 const firebaseConfig = {
   projectId: "studio-1428917996-c3da9",

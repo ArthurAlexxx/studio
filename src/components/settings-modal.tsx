@@ -12,7 +12,7 @@ import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type UserProfile } from '@/types/user';
 import { db } from '@/lib/firebase/client';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore/lite';
 
 const formSchema = z.object({
   calorieGoal: z.coerce.number().min(1, 'A meta de calorias deve ser maior que 0.'),

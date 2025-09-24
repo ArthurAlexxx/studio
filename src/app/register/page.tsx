@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase/client';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore/lite';
 import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
