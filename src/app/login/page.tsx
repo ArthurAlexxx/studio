@@ -48,7 +48,7 @@ export default function LoginPage() {
         description: "Login feito com sucesso! Redirecionando...",
       });
       router.push('/dashboard');
-      router.refresh();
+      // router.refresh() is removed to allow the dashboard to handle its own state.
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o login.');
       toast({

@@ -48,67 +48,74 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    const fetchUserAndData = async (user: User) => {
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileError) throw profileError;
-        
-        setUserProfile({
-            id: user.id,
-            full_name: profile.full_name,
-            email: user.email,
-        });
+    const checkUserSession = async () => {
+      setLoading(true);
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        await fetchMeals(user.id);
-
-      } catch (error: any) {
-         toast({
-          title: "Erro ao carregar dados",
-          description: error.message || "Não foi possível buscar os dados do seu perfil.",
-          variant: "destructive"
-        });
-      } finally {
+      if (sessionError) {
+        toast({ title: "Erro de Sessão", description: sessionError.message, variant: "destructive" });
         setLoading(false);
+        return;
       }
-    };
-
-    const handleAuthChange = async (event: string, session: any) => {
-      const user = session?.user;
       
+      const user = session?.user;
+
       if (user) {
-        if (user.id !== userProfile?.id) {
-          setLoading(true);
-          await fetchUserAndData(user);
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+
+          if (profileError) throw profileError;
+
+          if (profile) {
+              setUserProfile({
+                id: user.id,
+                full_name: profile.full_name,
+                email: user.email,
+              });
+              await fetchMeals(user.id);
+          } else {
+             throw new Error("Perfil não encontrado. Por favor, tente fazer login novamente.");
+          }
+
+        } catch (error: any) {
+          toast({
+            title: "Erro ao carregar dados do perfil",
+            description: error.message,
+            variant: "destructive",
+          });
+          // Se der erro, desloga para forçar um novo login limpo
+          await supabase.auth.signOut();
+          setUserProfile(null);
         }
       } else {
         setUserProfile(null);
         setMeals([]);
-        setLoading(false);
       }
+      setLoading(false);
     };
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthChange);
-
-    const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await handleAuthChange('INITIAL_SESSION', session);
-      } else {
+    checkUserSession();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUserProfile(null);
+        setMeals([]);
         setLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+         if (session?.user && session.user.id !== userProfile?.id) {
+            checkUserSession();
+         }
       }
-    };
-
-    checkInitialSession();
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase, fetchMeals, toast, userProfile?.id]);
+  }, [supabase, toast, fetchMeals, userProfile?.id]);
 
 
   const handleMealAdded = (newMealData: MealData) => {
