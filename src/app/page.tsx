@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const videoPlaceholderImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
-  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image-1');
+  const heroImage = PlaceHolderImages.find((img) => img.id === 'feature-1');
   const howItWorksImage = PlaceHolderImages.find((img) => img.id === 'feature-1');
   
   return (
@@ -54,7 +54,7 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-20 md:py-28 bg-background">
+        <section id="features" className="py-20 md:py-28 bg-muted/20">
           <div className="container px-4 md:px-6">
             <div className="mb-16 text-center animate-fade-in">
                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -91,7 +91,7 @@ export default function Home() {
         </section>
 
         {/* How it Works Section */}
-        <section id="how-it-works" className="py-20 md:py-28 bg-muted/30">
+        <section id="how-it-works" className="py-20 md:py-28 bg-background">
           <div className="container px-4 md:px-6">
              <div className="mb-16 text-center animate-fade-in">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -113,14 +113,14 @@ export default function Home() {
                         />
                     )}
                 </div>
-                <div className="space-y-10">
+                <div className="space-y-6">
                     {[
                         { icon: UserCheck, title: 'Crie seu Perfil', description: 'Defina suas metas, restrições e preferências alimentares.' },
                         { icon: Sparkles, title: 'Receba Planos com IA', description: 'Nossa IA gera planos alimentares personalizados para você.' },
                         { icon: MessageCircle, title: 'Converse com o Assistente', description: 'Tire dúvidas e receba dicas com nosso chatbot inteligente.' },
                         { icon: TrendingUp, title: 'Acompanhe seu Progresso', description: 'Visualize sua evolução com gráficos e indicadores de saúde.' },
                     ].map((step, index) => (
-                        <div key={step.title} className="flex items-start gap-6 animate-fade-in" style={{ animationDelay: `${400 + 200 * index}ms` }}>
+                        <div key={step.title} className="flex items-start gap-6 animate-fade-in pt-4" style={{ animationDelay: `${400 + 200 * index}ms` }}>
                             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xl">{index + 1}</div>
                             <div>
                                 <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
@@ -134,7 +134,7 @@ export default function Home() {
         </section>
 
         {/* Who it's for Section */}
-        <section id="who-its-for" className="py-20 md:py-28 bg-background">
+        <section id="who-its-for" className="py-20 md:py-28 bg-muted/20">
             <div className="container px-4 md:px-6">
                 <div className="mb-16 text-center animate-fade-in">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -151,7 +151,7 @@ export default function Home() {
                         { icon: HeartPulse, title: 'Pessoas com Restrições', description: 'Planos seguros para intolerâncias e alergias.' },
                         { icon: Goal, title: 'Controle de Peso', description: 'Emagrecimento ou ganho de massa com acompanhamento.' },
                     ].map((profile, index) => (
-                        <Card key={profile.title} className="text-center p-8 transition-all hover:shadow-2xl hover:-translate-y-2 animate-fade-in" style={{ animationDelay: `${200 * (index + 1)}ms` }}>
+                        <Card key={profile.title} className="text-center p-8 transition-all hover:shadow-2xl hover:-translate-y-2 animate-fade-in bg-card" style={{ animationDelay: `${200 * (index + 1)}ms` }}>
                             <div className="mb-4 flex justify-center">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                     <profile.icon className="h-8 w-8" />
@@ -166,7 +166,7 @@ export default function Home() {
         </section>
         
         {/* Video Section */}
-        <section className="py-20 md:py-28 bg-muted/30">
+        <section className="py-20 md:py-28 bg-background">
             <div className="container px-4 md:px-6 text-center">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-6">
                     Veja o NutriSmart em Ação
@@ -188,7 +188,7 @@ export default function Home() {
         </section>
 
         {/* Testimonials & Results Section */}
-        <section id="testimonials" className="py-20 md:py-28 bg-background">
+        <section id="testimonials" className="py-20 md:py-28 bg-muted/20">
             <div className="container px-4 md:px-6">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
                     <div>
@@ -197,7 +197,7 @@ export default function Home() {
                            Resultados que falam por si
                         </h2>
                         <div className="space-y-8">
-                            <Card className="p-6 shadow-lg">
+                            <Card className="p-6 shadow-lg bg-card">
                                 <CardContent className="p-0">
                                     <div className="flex items-center mb-2">
                                         {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < 5 ? 'text-yellow-400 fill-yellow-400' : 'text-muted'}`} />)}
@@ -206,7 +206,7 @@ export default function Home() {
                                     <p className="mt-4 font-semibold text-right">- Juliana M., usuária desde 2023</p>
                                 </CardContent>
                             </Card>
-                             <Card className="p-6 shadow-lg">
+                             <Card className="p-6 shadow-lg bg-card">
                                 <CardContent className="p-0">
                                      <div className="flex items-center mb-2">
                                         {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${i < 5 ? 'text-yellow-400 fill-yellow-400' : 'text-muted'}`} />)}
@@ -243,5 +243,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
