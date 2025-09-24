@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
-import { createClient } from '@/lib/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Leaf, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -13,6 +12,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { auth, db } from '@/lib/firebase/client';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
     name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -28,7 +30,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const supabase = createClient();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -44,36 +45,36 @@ export default function RegisterPage() {
   const handleRegister = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-            data: {
-                full_name: values.name,
-            }
-        }
-      });
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
 
-      if (error) throw error;
-      if (!data.session) {
-         throw new Error('Não foi possível criar a sessão do usuário após o registro.');
+      if (user) {
+        // Atualiza o perfil do usuário no Firebase Auth
+        await updateProfile(user, { displayName: values.name });
+
+        // Cria um documento para o usuário no Firestore
+        await setDoc(doc(db, "users", user.uid), {
+            fullName: values.name,
+            email: values.email,
+        });
+
+        setSuccess(true);
+        toast({
+            title: "Registro realizado com sucesso!",
+            description: "Você será redirecionado para o dashboard em instantes...",
+        });
+        
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000);
+      } else {
+        throw new Error("Não foi possível criar o usuário.");
       }
-      
-      setSuccess(true);
-      toast({
-          title: "Registro realizado com sucesso!",
-          description: "Você será redirecionado para o dashboard em instantes...",
-      });
-      
-      setTimeout(() => {
-        router.push('/dashboard');
-        router.refresh();
-      }, 2000);
 
     } catch (error: any) {
         toast({
             title: "Erro no registro",
-            description: error.message || 'Ocorreu um erro durante o registro.',
+            description: error.code === 'auth/email-already-in-use' ? 'Este e-mail já está em uso.' : error.message,
             variant: "destructive"
         });
     } finally {

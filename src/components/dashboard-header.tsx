@@ -1,38 +1,36 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client';
 import { BarChart, ChevronLeft, Plus, LogOut, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
 import { useState } from 'react';
 import type { MealData } from '@/types/meal';
-
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email?: string;
-}
+import { auth } from '@/lib/firebase/client';
+import { signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
-  user: UserProfile | null;
+  user: User | null;
 }
 
 export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderProps) {
   const router = useRouter();
-  const supabase = createClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
   };
 
-  const userId = user?.id || null;
-  const userName = user?.full_name || 'Usuário';
+  const userId = user?.uid || null;
+  const userName = user?.displayName || 'Usuário';
 
   return (
     <>

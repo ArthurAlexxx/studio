@@ -1,122 +1,58 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardHeader from '@/components/dashboard-header';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import type { MealData } from '@/types/meal';
 import DashboardMetrics from '@/components/dashboard-metrics';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
-
-type UserProfile = {
-  id: string;
-  full_name: string;
-  email?: string;
-};
+import { auth, db } from '@/lib/firebase/client';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
-
-  const fetchMeals = useCallback(async (userId: string) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('meal_entries')
-        .select('meal_data')
-        .eq('user_id', userId)
-        .eq('date', today);
-
-      if (error) throw error;
-      
-      const loadedMeals = data.map((entry: any) => entry.meal_data);
-      setMeals(loadedMeals);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar refeições",
-        description: error.message || "Não foi possível buscar suas refeições.",
-        variant: "destructive"
-      });
-    }
-  }, [supabase, toast]);
-
+  const router = useRouter();
 
   useEffect(() => {
-    const checkUserSession = async () => {
-      setLoading(true);
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        toast({ title: "Erro de Sessão", description: sessionError.message, variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-      
-      const user = session?.user;
-
-      if (user) {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
         try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .single();
-
-          if (profileError) throw profileError;
-
-          if (profile) {
-              setUserProfile({
-                id: user.id,
-                full_name: profile.full_name,
-                email: user.email,
-              });
-              await fetchMeals(user.id);
-          } else {
-             throw new Error("Perfil não encontrado. Por favor, tente fazer login novamente.");
-          }
-
+          const today = new Date().toISOString().split('T')[0];
+          const q = query(
+            collection(db, "meal_entries"),
+            where("userId", "==", currentUser.uid),
+            where("date", "==", today)
+          );
+          const querySnapshot = await getDocs(q);
+          const loadedMeals = querySnapshot.docs.map(doc => doc.data().mealData as MealData);
+          setMeals(loadedMeals);
         } catch (error: any) {
           toast({
-            title: "Erro ao carregar dados do perfil",
-            description: error.message,
-            variant: "destructive",
+            title: "Erro ao carregar refeições",
+            description: error.message || "Não foi possível buscar suas refeições.",
+            variant: "destructive"
           });
-          // Se der erro, desloga para forçar um novo login limpo
-          await supabase.auth.signOut();
-          setUserProfile(null);
         }
       } else {
-        setUserProfile(null);
+        setUser(null);
         setMeals([]);
+        // Redireciona para o login se não houver usuário
+        router.push('/login');
       }
       setLoading(false);
-    };
-
-    checkUserSession();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setUserProfile(null);
-        setMeals([]);
-        setLoading(false);
-      } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-         if (session?.user && session.user.id !== userProfile?.id) {
-            checkUserSession();
-         }
-      }
     });
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, toast, fetchMeals, userProfile?.id]);
-
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [router, toast]);
 
   const handleMealAdded = (newMealData: MealData) => {
     setMeals(prevMeals => [...prevMeals, newMealData]);
@@ -131,9 +67,14 @@ export default function DashboardPage() {
     );
   }
 
+  if (!user) {
+     // Renderiza nada ou um redirect enquanto espera o useEffect redirecionar
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50">
-      <DashboardHeader onMealAdded={handleMealAdded} user={userProfile} />
+      <DashboardHeader onMealAdded={handleMealAdded} user={user} />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="container mx-auto">
               <>

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
-import { createClient } from '@/lib/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Leaf, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -13,6 +12,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
+import { auth } from '@/lib/firebase/client';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -23,7 +24,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -38,25 +38,21 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-      if (error) throw error;
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: "Sucesso!",
         description: "Login feito com sucesso! Redirecionando...",
       });
       router.push('/dashboard');
-      // router.refresh() is removed to allow the dashboard to handle its own state.
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o login.');
       toast({
         title: "Erro de Login",
-        description: error.message || 'Verifique seu e-mail e senha.',
+        description: error.code === 'auth/invalid-credential' ? 'Credenciais inválidas. Verifique seu e-mail e senha.' : error.message,
         variant: "destructive"
       });
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 

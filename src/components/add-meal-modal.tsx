@@ -12,7 +12,8 @@ import * as z from 'zod';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { MealData } from '@/types/meal';
-import { createClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase/client';
+import { collection, addDoc } from 'firebase/firestore';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -36,7 +37,6 @@ interface AddMealModalProps {
 
 export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId }: AddMealModalProps) {
   const { toast } = useToast();
-  const supabase = createClient();
   const form = useForm<AddMealFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,14 +56,14 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
     if (!userId) {
       toast({
         title: "Erro de autenticação",
-        description: "Usuário não identificado. A página será recarregada.",
+        description: "Usuário não identificado. Por favor, faça login novamente.",
         variant: "destructive"
       });
-      setTimeout(() => window.location.reload(), 2000);
       return;
     }
     
     try {
+      // O webhook externo permanece o mesmo
       const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
       const requests = data.foods.map(food => {
         const payload = {
@@ -77,17 +77,13 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
           body: JSON.stringify(payload),
         }).then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                return response.json();
-            }
-            return null; // Return null for non-json responses
+            return response.json();
         });
       });
       
       const results = (await Promise.all(requests)).flat().filter((r): r is MealData => r !== null);
 
-      if (!results || results.length === 0) {
+      if (results.length === 0) {
         toast({
           title: 'Nenhum dado nutricional retornado',
           description: 'O serviço não retornou informações para os alimentos informados.',
@@ -97,31 +93,26 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
       }
       
       const combinedMealData: MealData = results.reduce((acc, meal) => {
-        if (meal && meal.alimentos && meal.totais) {
-            acc.alimentos.push(...meal.alimentos);
-            acc.totais.calorias += meal.totais.calorias;
-            acc.totais.proteinas += meal.totais.proteinas;
-            acc.totais.carboidratos += meal.totais.carboidratos;
-            acc.totais.gorduras += meal.totais.gorduras;
-            acc.totais.fibras += meal.totais.fibras;
-        }
+        acc.alimentos.push(...meal.alimentos);
+        acc.totais.calorias += meal.totais.calorias;
+        acc.totais.proteinas += meal.totais.proteinas;
+        acc.totais.carboidratos += meal.totais.carboidratos;
+        acc.totais.gorduras += meal.totais.gorduras;
+        acc.totais.fibras += meal.totais.fibras;
         return acc;
       }, {
           alimentos: [],
           totais: { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }
       });
       
-
-      const { error: dbError } = await supabase
-        .from('meal_entries')
-        .insert([{ 
-            user_id: userId, 
-            date: new Date().toISOString().split('T')[0],
-            meal_type: data.mealType,
-            meal_data: combinedMealData
-        }]);
-
-      if (dbError) throw dbError;
+      // Salva no Firestore
+      await addDoc(collection(db, 'meal_entries'), {
+        userId: userId,
+        date: new Date().toISOString().split('T')[0],
+        mealType: data.mealType,
+        mealData: combinedMealData,
+        createdAt: new Date(),
+      });
 
       onMealAdded(combinedMealData);
 
