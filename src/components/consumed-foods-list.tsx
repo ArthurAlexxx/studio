@@ -5,7 +5,7 @@ import type { MealEntry } from '@/types/meal';
 import { Utensils, Trash2, CalendarOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-import { deleteDoc, doc } from 'firebase/firestore/lite';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 

@@ -13,7 +13,7 @@ import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { MealData } from '@/types/meal';
 import { db } from '@/lib/firebase/client';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore/lite';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
