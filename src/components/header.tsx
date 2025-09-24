@@ -10,12 +10,12 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase/client';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ThemeToggle } from './theme-toggle';
 
-const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
+const NavLink = ({ href, children, onClick }: { href: string; children: React.ReactNode, onClick?: () => void }) => (
   <Link
     href={href}
-    className="font-medium text-muted-foreground transition-colors hover:text-primary"
+    onClick={onClick}
+    className="font-medium text-muted-foreground transition-colors hover:text-primary text-lg md:text-base"
   >
     {children}
   </Link>
@@ -25,6 +25,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSheetOpen, setSheetOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function Header() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      setSheetOpen(false);
       router.push('/');
     } catch (error) {
       console.error("Error signing out: ", error);
@@ -57,13 +59,13 @@ export default function Header() {
 
   const navLinks = (
     <>
-      <NavLink href="/#features">Funcionalidades</NavLink>
-      {user && <NavLink href="/dashboard">Dashboard</NavLink>}
+      <NavLink href="/#features" onClick={() => setSheetOpen(false)}>Funcionalidades</NavLink>
+      {user && <NavLink href="/dashboard" onClick={() => setSheetOpen(false)}>Dashboard</NavLink>}
     </>
   );
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b transition-all ${isScrolled ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-md' : 'border-transparent bg-background'}`}>
+    <header className={`sticky top-0 z-50 w-full border-b transition-all ${isScrolled ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm' : 'border-transparent bg-background'}`}>
       <div className="container flex h-20 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Leaf className="h-7 w-7 text-primary" />
@@ -74,39 +76,37 @@ export default function Header() {
         </nav>
         <div className="flex items-center gap-2">
           {!loading && (
-            <>
+            <div className='hidden md:flex items-center gap-2'>
               {user ? (
-                <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
-                          <UserIcon className="h-5 w-5 text-primary" />
-                          <span>Olá, {userName}!</span>
-                          <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                         <BarChart3 className="mr-2 h-4 w-4" />
-                        <span>Meu Dashboard</span>
-                      </DropdownMenuItem>
-                       <DropdownMenuItem onClick={() => router.push('/history')}>
-                        <History className="mr-2 h-4 w-4" />
-                        <span>Meu Histórico</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Sair</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
+                        <UserIcon className="h-5 w-5 text-primary" />
+                        <span>Olá, {userName}!</span>
+                        <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                       <BarChart3 className="mr-2 h-4 w-4" />
+                      <span>Meu Dashboard</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/history')}>
+                      <History className="mr-2 h-4 w-4" />
+                      <span>Meu Histórico</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sair</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <>
-                  <Button variant="ghost" className='hidden md:inline-flex' asChild>
+                  <Button variant="ghost" asChild>
                     <Link href="/login">Login</Link>
                   </Button>
                   <Button asChild>
@@ -114,13 +114,11 @@ export default function Header() {
                   </Button>
                 </>
               )}
-            </>
+            </div>
           )}
 
-          <ThemeToggle />
-
           <div className="md:hidden">
-            <Sheet>
+            <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-6 w-6" />
@@ -128,16 +126,30 @@ export default function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
-                <nav className="mt-8 grid gap-6 text-lg">
+                <nav className="mt-8 grid gap-6">
                   {navLinks}
-                  {!user ? (
-                     <Button variant="ghost" asChild>
-                        <Link href="/login">Login</Link>
-                     </Button>
-                  ) : (
-                     <Button variant="ghost" onClick={handleSignOut}>
-                        Sair
-                     </Button>
+                  <Separator className='my-2' />
+                  {!loading && (
+                    <>
+                      {user ? (
+                         <div className='grid gap-4'>
+                            <p className='font-medium text-muted-foreground'>Olá, {userName}!</p>
+                            <Button variant="ghost" className='justify-start' onClick={handleSignOut}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Sair
+                            </Button>
+                         </div>
+                      ) : (
+                         <div className='grid gap-4'>
+                             <Button variant="outline" asChild>
+                                <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
+                             </Button>
+                             <Button asChild>
+                                <Link href="/register" onClick={() => setSheetOpen(false)}>Começar Agora</Link>
+                             </Button>
+                         </div>
+                      )}
+                    </>
                   )}
                 </nav>
               </SheetContent>

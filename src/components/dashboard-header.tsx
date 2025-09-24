@@ -2,7 +2,8 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown, History } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown, History, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
@@ -13,7 +14,6 @@ import { signOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { type UserProfile } from '@/types/user';
 import SettingsModal from './settings-modal';
-import { ThemeToggle } from './theme-toggle';
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
@@ -40,6 +40,28 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
   const userId = user?.uid || null;
   const userName = userProfile?.fullName.split(' ')[0] || user?.displayName?.split(' ')[0] || 'Usuário';
 
+  const menuItems = (
+      <>
+          <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+            <BarChart3 className="mr-2 h-4 w-4" />
+            <span>Meu Dashboard</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/history')}>
+            <History className="mr-2 h-4 w-4" />
+            <span>Meu Histórico</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Definir Metas</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sair</span>
+          </DropdownMenuItem>
+      </>
+  );
+
   return (
     <>
       <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -50,44 +72,49 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
           </Link>
           
           <div className="flex items-center gap-2">
-              {user && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
-                        <UserIcon className="h-5 w-5 text-primary" />
-                        <span>Olá, {userName}!</span>
-                        <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      <span>Meu Dashboard</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/history')}>
-                      <History className="mr-2 h-4 w-4" />
-                      <span>Meu Histórico</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Definir Metas</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sair</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            
-            <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Refeição
-            </Button>
-            <ThemeToggle />
+              <div className="hidden md:flex items-center gap-2">
+                {user && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
+                          <UserIcon className="h-5 w-5 text-primary" />
+                          <span>Olá, {userName}!</span>
+                          <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {menuItems}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Refeição
+                </Button>
+              </div>
+
+            <div className="md:hidden">
+                <Sheet>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <Menu className="h-6 w-6" />
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right">
+                        <div className="flex flex-col h-full">
+                            <div className="flex-grow mt-8 grid gap-4 text-lg">
+                                {menuItems}
+                                <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm w-full mt-4">
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Adicionar Refeição
+                                </Button>
+                            </div>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            </div>
           </div>
         </div>
       </header>

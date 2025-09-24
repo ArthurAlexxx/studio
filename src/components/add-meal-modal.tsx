@@ -203,7 +203,7 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name={`foods.${index}.portion`}
@@ -249,7 +249,7 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
               </div>
             </div>
 
-            <DialogFooter className="!mt-8 gap-2 sm:gap-0">
+            <DialogFooter className="!mt-8 gap-2 sm:gap-0 flex-col sm:flex-row">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
