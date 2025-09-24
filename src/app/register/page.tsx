@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
     name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
@@ -25,10 +26,10 @@ const formSchema = z.object({
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,8 +43,6 @@ export default function RegisterPage() {
 
   const handleRegister = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    setError(null);
-    setSuccess(false);
     try {
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
@@ -59,19 +58,25 @@ export default function RegisterPage() {
       if (!data.user) throw new Error('Não foi possível criar o usuário.');
 
       setSuccess(true);
+      toast({
+          title: "Registro realizado com sucesso!",
+          description: "Você será redirecionado em instantes...",
+      });
+      setTimeout(() => {
+        router.push('/dashboard');
+        router.refresh();
+      }, 2000);
+
     } catch (error: any) {
-      setError(error.message || 'Ocorreu um erro durante o registro.');
+        toast({
+            title: "Erro no registro",
+            description: error.message || 'Ocorreu um erro durante o registro.',
+            variant: "destructive"
+        });
     } finally {
       setLoading(false);
     }
   };
-  
-  if (success) {
-      setTimeout(() => {
-          router.push('/dashboard');
-          router.refresh();
-      }, 2000);
-  }
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-gray-50 p-4">
@@ -148,7 +153,6 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-                {error && <p className="text-sm font-medium text-destructive">{error}</p>}
                 <Button type="submit" className="w-full !mt-8 rounded-xl" size="lg" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   Criar Conta Gratuitamente

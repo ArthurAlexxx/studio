@@ -11,7 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
-type UserProfile = User & { user_metadata: { full_name: string } };
+type UserProfile = {
+  id: string;
+  full_name: string;
+  email?: string;
+};
 
 /**
  * @fileoverview A página principal do Dashboard.
@@ -21,7 +25,7 @@ type UserProfile = User & { user_metadata: { full_name: string } };
 export default function DashboardPage() {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const supabase = createClient();
   const { toast } = useToast();
 
@@ -49,37 +53,63 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    const fetchUserAndData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const fetchUserAndData = async (user: User) => {
+      setLoading(true);
       
-      if (session) {
-        const currentUser = session.user as UserProfile;
-        setUser(currentUser);
-        await fetchMeals(currentUser.id);
+      // 1. Fetch user profile from 'profiles' table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        toast({
+          title: "Erro ao carregar perfil",
+          description: "Não foi possível buscar os dados do seu perfil.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
       }
-      setLoading(false); 
+      
+      setUserProfile({
+          id: user.id,
+          full_name: profile.full_name,
+          email: user.email,
+      });
+
+      // 2. Fetch meals for this user
+      await fetchMeals(user.id);
+      setLoading(false);
     };
 
-    fetchUserAndData();
-
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const currentUser = session.user as UserProfile;
-        setUser(currentUser);
-        fetchMeals(currentUser.id).finally(() => setLoading(false));
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+      const user = session?.user;
+      if (user) {
+        fetchUserAndData(user);
+      } else {
+        setUserProfile(null);
         setMeals([]);
         setLoading(false);
-      } else if (!session) {
-         setLoading(false);
       }
     });
+
+    // Initial check
+    (async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+           await fetchUserAndData(session.user);
+        } else {
+           setLoading(false);
+        }
+    })();
+
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase, fetchMeals]);
+  }, [supabase, fetchMeals, toast]);
 
 
   const handleMealAdded = (newMealData: MealData) => {
@@ -90,14 +120,14 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen w-full flex-col bg-gray-50 items-center justify-center">
          <Loader2 className="h-16 w-16 animate-spin text-primary" />
-         <p className="mt-4 text-muted-foreground">Verificando sua sessão...</p>
+         <p className="mt-4 text-muted-foreground">Verificando sua sessão e carregando dados...</p>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50">
-      <DashboardHeader onMealAdded={handleMealAdded} user={user} />
+      <DashboardHeader onMealAdded={handleMealAdded} user={userProfile} />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="container mx-auto">
               <>

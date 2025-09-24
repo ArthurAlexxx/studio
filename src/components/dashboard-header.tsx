@@ -2,17 +2,22 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { BarChart, ChevronLeft, Plus, Users, LogOut, User as UserIcon } from 'lucide-react';
+import { BarChart, ChevronLeft, Plus, LogOut, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
 import { useState } from 'react';
 import type { MealData } from '@/types/meal';
-import { User } from '@supabase/supabase-js';
+
+interface UserProfile {
+  id: string;
+  full_name: string;
+  email?: string;
+}
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
-  user: (User & { user_metadata: { full_name: string } }) | null;
+  user: UserProfile | null;
 }
 
 export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderProps) {
@@ -27,7 +32,7 @@ export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderPr
   };
 
   const userId = user?.id || null;
-  const userName = user?.user_metadata?.full_name || user?.email;
+  const userName = user?.full_name || user?.email;
 
   return (
     <>
