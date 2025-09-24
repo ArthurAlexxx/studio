@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Leaf, Loader2, CheckCircle } from 'lucide-react';
+import { Leaf, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -53,6 +53,8 @@ export default function RegisterPage() {
         await setDoc(doc(db, "users", user.uid), {
             fullName: values.name,
             email: values.email,
+            currentStreak: 0,
+            lastLoginDate: null,
         });
 
         toast({

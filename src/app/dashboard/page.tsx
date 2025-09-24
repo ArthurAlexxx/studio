@@ -5,18 +5,21 @@ import { useState, useEffect } from 'react';
 import DashboardHeader from '@/components/dashboard-header';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import type { MealData } from '@/types/meal';
+import type { UserProfile } from '@/types/user';
 import DashboardMetrics from '@/components/dashboard-metrics';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { differenceInCalendarDays, parseISO } from 'date-fns';
 
 export default function DashboardPage() {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -25,6 +28,49 @@ export default function DashboardPage() {
       if (currentUser) {
         setUser(currentUser);
         try {
+          // --- Fetch User Profile and Update Streak ---
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          let profileData: UserProfile;
+
+          if (userDoc.exists()) {
+            profileData = userDoc.data() as UserProfile;
+            const today = new Date().toISOString().split('T')[0];
+            const lastLogin = profileData.lastLoginDate;
+
+            if (lastLogin !== today) {
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              
+              if (lastLogin && differenceInCalendarDays(new Date(), parseISO(lastLogin)) === 1) {
+                // Logged in yesterday, increment streak
+                profileData.currentStreak = (profileData.currentStreak || 0) + 1;
+              } else {
+                // Didn't log in yesterday, reset streak
+                profileData.currentStreak = 1;
+              }
+              profileData.lastLoginDate = today;
+
+              // Update Firestore
+              await updateDoc(userDocRef, {
+                currentStreak: profileData.currentStreak,
+                lastLoginDate: profileData.lastLoginDate
+              });
+            }
+          } else {
+            // Create profile if it doesn't exist (edge case)
+            profileData = {
+              fullName: currentUser.displayName || 'Usuário',
+              email: currentUser.email || '',
+              currentStreak: 1,
+              lastLoginDate: new Date().toISOString().split('T')[0],
+            };
+            await setDoc(userDocRef, profileData);
+          }
+          setUserProfile(profileData);
+
+          // --- Fetch Meals ---
           const today = new Date().toISOString().split('T')[0];
           const q = query(
             collection(db, "meal_entries"),
@@ -34,23 +80,23 @@ export default function DashboardPage() {
           const querySnapshot = await getDocs(q);
           const loadedMeals = querySnapshot.docs.map(doc => doc.data().mealData as MealData);
           setMeals(loadedMeals);
+
         } catch (error: any) {
           toast({
-            title: "Erro ao carregar refeições",
-            description: error.message || "Não foi possível buscar suas refeições.",
+            title: "Erro ao carregar dados",
+            description: error.message || "Não foi possível buscar seus dados.",
             variant: "destructive"
           });
         }
       } else {
         setUser(null);
         setMeals([]);
-        // Redireciona para o login se não houver usuário
+        setUserProfile(null);
         router.push('/login');
       }
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [router, toast]);
 
@@ -68,7 +114,6 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-     // Renderiza nada ou um redirect enquanto espera o useEffect redirecionar
     return null;
   }
 
@@ -78,7 +123,7 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="container mx-auto">
               <>
-                <DashboardMetrics meals={meals} />
+                <DashboardMetrics meals={meals} userProfile={userProfile} />
                 <div className="mt-8">
                   <ConsumedFoodsList meals={meals} />
                 </div>

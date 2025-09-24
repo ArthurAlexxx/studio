@@ -1,12 +1,14 @@
 // src/components/dashboard-metrics.tsx
 import type { MealData } from '@/types/meal';
+import type { UserProfile } from '@/types/user';
 import SummaryCards from './summary-cards';
 import ChartsSection from './charts-section';
-import { eachDayOfInterval, startOfWeek, endOfWeek, format, getDay } from 'date-fns';
+import { eachDayOfInterval, startOfWeek, endOfWeek, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface DashboardMetricsProps {
   meals: MealData[];
+  userProfile: UserProfile | null;
 }
 
 /**
@@ -14,7 +16,7 @@ interface DashboardMetricsProps {
  * Ele centraliza a lógica de cálculo dos totais de nutrientes e prepara os dados
  * para os componentes de visualização (cards e gráficos).
  */
-export default function DashboardMetrics({ meals }: DashboardMetricsProps) {
+export default function DashboardMetrics({ meals, userProfile }: DashboardMetricsProps) {
   // Calcula os totais de nutrientes a partir da lista de refeições.
   const totalNutrients = meals.reduce(
     (acc, meal) => {
@@ -64,6 +66,7 @@ export default function DashboardMetrics({ meals }: DashboardMetricsProps) {
         totalNutrients={totalNutrients}
         calorieGoal={calorieGoal}
         proteinGoal={proteinGoal}
+        currentStreak={userProfile?.currentStreak || 0}
       />
 
       {/* Componente para a seção de gráficos */}
