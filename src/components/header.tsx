@@ -9,7 +9,7 @@ import React from 'react';
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link
     href={href}
-    className="text-sm font-medium transition-colors hover:text-primary"
+    className="font-medium text-muted-foreground transition-colors hover:text-primary"
   >
     {children}
   </Link>
@@ -29,37 +29,41 @@ export default function Header() {
   const navLinks = (
     <>
       <NavLink href="#features">Funcionalidades</NavLink>
-      <NavLink href="#meal-planner">Planejador IA</NavLink>
-      <NavLink href="#recipe-search">Receitas IA</NavLink>
-      <NavLink href="#dashboard">Dashboard</NavLink>
-      <NavLink href="#contact">Contato</NavLink>
+      <NavLink href="#how-it-works">Como Funciona</NavLink>
+      <NavLink href="#pricing">Planos</NavLink>
+      <NavLink href="#testimonials">Depoimentos</NavLink>
     </>
   );
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b transition-colors ${isScrolled ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60' : 'border-transparent bg-transparent'}`}>
-      <div className="container flex h-16 items-center justify-between">
+    <header className={`sticky top-0 z-50 w-full border-b transition-colors ${isScrolled ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60' : 'border-transparent bg-background'}`}>
+      <div className="container flex h-20 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Leaf className="h-6 w-6 text-primary" />
-          <span className="font-headline text-xl font-bold">NutriSmart</span>
+          <Leaf className="h-7 w-7 text-primary" />
+          <span className="text-2xl font-bold">NutriSmart</span>
         </Link>
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-8 md:flex">
           {navLinks}
         </nav>
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <nav className="mt-8 grid gap-6 text-lg">
-                {navLinks}
-              </nav>
-            </SheetContent>
-          </Sheet>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" className='hidden md:inline-flex'>Login</Button>
+          <Button>Começar Agora</Button>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <nav className="mt-8 grid gap-6 text-lg">
+                  {navLinks}
+                   <Button variant="ghost">Login</Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
