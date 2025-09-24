@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image-1",
+      "description": "A flat lay of healthy food ingredients like vegetables and fruits on a wooden table.",
+      "imageUrl": "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxoZWFsdGh5JTIwZm9vZHxlbnwwfHx8fDE3NTg3MTE2NjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "healthy food"
+    },
+    {
+      "id": "recipe-1",
+      "description": "A delicious looking pasta dish.",
+      "imageUrl": "https://images.unsplash.com/photo-1599749011927-9a77278bfa61?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwYXN0YSUyMGRpc2h8ZW58MHx8fHwxNzU4NzA2Njg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pasta dish"
+    },
+    {
+      "id": "recipe-2",
+      "description": "A fresh and vibrant salad in a bowl.",
+      "imageUrl": "https://images.unsplash.com/photo-1589041611454-fd81bb39c3ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmcmVzaCUyMHNhbGFkfGVufDB8fHx8MTc1ODcwNTkyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fresh salad"
+    },
+    {
+      "id": "recipe-3",
+      "description": "Grilled chicken breast with steamed vegetables.",
+      "imageUrl": "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxncmlsbGVkJTIwY2hpY2tlbnxlbnwwfHx8fDE3NTg3MjMzMjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "grilled chicken"
+    },
+    {
+      "id": "recipe-4",
+      "description": "A hearty vegetable soup.",
+      "imageUrl": "https://images.unsplash.com/photo-1511099968099-8da3c3fa3950?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx2ZWdldGFibGUlMjBzb3VwfGVufDB8fHx8MTc1ODcwNTkyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vegetable soup"
+    },
+    {
+      "id": "feature-1",
+      "description": "A person planning their weekly meals with a notebook.",
+      "imageUrl": "https://images.unsplash.com/photo-1494390248081-4e521a5940db?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtZWFsJTIwcGxhbm5pbmd8ZW58MHx8fHwxNzU4NzA0MDg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "meal planning"
+    },
+    {
+      "id": "feature-2",
+      "description": "A variety of fresh ingredients on a kitchen counter.",
+      "imageUrl": "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMGluZ3JlZGllbnRzfGVufDB8fHx8MTc1ODcxMTE3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fresh ingredients"
+    },
+    {
+      "id": "feature-3",
+      "description": "A person looking at a tablet screen with health charts and graphs.",
+      "imageUrl": "https://images.unsplash.com/photo-1758691461990-03b49d969495?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxoZWFsdGglMjBjaGFydHN8ZW58MHx8fHwxNzU4NzMzMzIwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "health charts"
+    }
+  ]
 }
