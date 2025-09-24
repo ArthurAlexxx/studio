@@ -2,35 +2,49 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Leaf, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+const formSchema = z.object({
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
+  password: z.string().min(1, { message: 'A senha não pode estar em branco.' }),
+});
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const handleLogin = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     setError(null);
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
       });
       if (error) throw error;
       router.push('/');
+      router.refresh(); // Forces a refresh to update user state in header
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Ocorreu um erro durante o login.');
     } finally {
       setLoading(false);
     }
@@ -44,47 +58,62 @@ export default function LoginPage() {
                 <span className="text-2xl font-bold">NutriSmart</span>
             </Link>
         </div>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Acesse sua Conta</CardTitle>
+          <CardTitle className="text-3xl font-bold">Acesse sua Conta</CardTitle>
           <CardDescription>Bem-vindo de volta! Insira seus dados para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="seu@email.com"
+                        {...field}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Sua senha"
+                        {...field}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Entrar
-            </Button>
-          </form>
+               {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+              <Button type="submit" className="w-full !mt-8" size="lg" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Entrar
+              </Button>
+            </form>
+          </Form>
         </CardContent>
-        <CardFooter className="flex-col items-center gap-2">
-           <p className="text-xs text-muted-foreground">
+        <CardFooter className="flex-col items-center gap-4">
+           <p className="text-sm text-muted-foreground">
               Não tem uma conta?{' '}
-              <Link href="/register" className="font-medium text-primary hover:underline">
+              <Link href="/register" className="font-semibold text-primary underline-offset-4 hover:underline">
                 Crie uma agora
               </Link>
             </p>
