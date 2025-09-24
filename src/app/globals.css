@@ -10,7 +10,7 @@
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 142.1 76.2% 36.3%;
+    --primary: 145 63% 49%;
     --primary-foreground: 355.7 100% 97.3%;
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 220.9 39.3% 11%;
@@ -22,12 +22,12 @@
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 224 71.4% 4.1%;
+    --ring: 145 63% 49%;
     --radius: 0.5rem;
 
-    --chart-1: 142.1 76.2% 36.3%;
-    --chart-2: 220.9 39.3% 11%;
-    --chart-3: 0 84.2% 60.2%;
+    --chart-1: 145 63% 49%;
+    --chart-2: 212 100% 66%;
+    --chart-3: 22 100% 64%;
     --chart-4: 47.9 95.8% 53.1%;
     --chart-5: 22.8 90.1% 48.4%;
 
@@ -36,9 +36,9 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-accent: 220 14.3% 95.9%;
     --sidebar-accent-foreground: 220.9 39.3% 11%;
-    --sidebar-primary: 142.1 76.2% 36.3%;
+    --sidebar-primary: 145 63% 49%;
     --sidebar-primary-foreground: 355.7 100% 97.3%;
-    --sidebar-ring: 224 71.4% 4.1%;
+    --sidebar-ring: 145 63% 49%;
   }
 
   .dark {
@@ -48,7 +48,7 @@
     --card-foreground: 210 20% 98%;
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 20% 98%;
-    --primary: 142.1 70.6% 45.3%;
+    --primary: 145 63% 49%;
     --primary-foreground: 144.9 80.4% 10%;
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 20% 98%;
@@ -60,12 +60,12 @@
     --destructive-foreground: 0 85.7% 97.3%;
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
-    --ring: 142.1 70.6% 45.3%;
+    --ring: 145 63% 49%;
     --radius: 0.5rem;
 
-    --chart-1: 142.1 70.6% 45.3%;
-    --chart-2: 215.9 38.3% 41%;
-    --chart-3: 0 62.8% 30.6%;
+    --chart-1: 145 63% 49%;
+    --chart-2: 212 100% 76%;
+    --chart-3: 22 100% 74%;
     --chart-4: 47.9 95.8% 53.1%;
     --chart-5: 22.8 90.1% 48.4%;
 
@@ -74,9 +74,9 @@
     --sidebar-border: 215 27.9% 16.9%;
     --sidebar-accent: 215 27.9% 16.9%;
     --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-primary: 142.1 70.6% 45.3%;
+    --sidebar-primary: 145 63% 49%;
     --sidebar-primary-foreground: 144.9 80.4% 10%;
-    --sidebar-ring: 142.1 70.6% 45.3%;
+    --sidebar-ring: 145 63% 49%;
   }
 }
  
@@ -91,4 +91,10 @@
   section {
     @apply w-full py-12 md:py-24 lg:py-32;
   }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
 }

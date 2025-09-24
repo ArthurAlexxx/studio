@@ -3,7 +3,7 @@ import type { MealData } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
 import SummaryCards from './summary-cards';
 import ChartsSection from './charts-section';
-import { eachDayOfInterval, startOfWeek, endOfWeek, format } from 'date-fns';
+import { eachDayOfInterval, startOfWeek, endOfWeek, format, isToday as isTodayFns } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface DashboardMetricsProps {
@@ -36,8 +36,8 @@ export default function DashboardMetrics({ meals, userProfile }: DashboardMetric
   // Prepara os dados para os gráficos.
   const macrosData = [
     { name: 'Proteínas', value: totalNutrients.proteinas, fill: 'hsl(var(--chart-1))' },
-    { name: 'Carboidratos', value: totalNutrients.carboidratos, fill: 'hsl(var(--chart-2))' },
-    { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-3))' },
+    { name: 'Carboidratos', value: totalNutrients.carboidratos, fill: 'hsl(var(--chart-3))' },
+    { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-2))' },
   ];
 
   // Gera os dados para o gráfico de evolução semanal usando date-fns.
@@ -47,18 +47,19 @@ export default function DashboardMetrics({ meals, userProfile }: DashboardMetric
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const weeklyCaloriesData = daysOfWeek.map(day => {
-    const isToday = format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+    const isToday = isTodayFns(day);
     return {
-      day: format(day, 'E', { locale: ptBR }), // Ex: "Seg", "Ter", etc.
-      calories: isToday ? Math.round(totalNutrients.calorias) : 0,
+      day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1), // Ex: "Seg", "Ter", etc.
+      calories: isToday ? Math.round(totalNutrients.calorias) : 0, // Mock: No momento só temos dados de hoje
     };
   });
 
 
   return (
     <>
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-muted-foreground">Visão Geral</h2>
+      <div className="mb-6 animate-fade-in">
+        <h2 className="text-2xl font-bold text-foreground">Visão Geral de Hoje</h2>
+        <p className="text-muted-foreground">Seu resumo diário de nutrição e metas.</p>
       </div>
       
       {/* Componente para os cards de resumo */}

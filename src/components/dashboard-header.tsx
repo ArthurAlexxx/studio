@@ -1,7 +1,7 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { BarChart, ChevronLeft, Plus, LogOut, User as UserIcon, Settings } from 'lucide-react';
+import { BarChart3, ChevronLeft, Plus, LogOut, User as UserIcon, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
@@ -36,40 +36,40 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
   };
 
   const userId = user?.uid || null;
-  const userName = user?.displayName || 'Usuário';
+  const userName = userProfile?.fullName.split(' ')[0] || user?.displayName?.split(' ')[0] || 'Usuário';
 
   return (
     <>
       <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-20 items-center justify-between">
           <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full" asChild>
+              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full md:hidden" asChild>
                   <Link href="/">
                       <ChevronLeft className="h-5 w-5" />
                       <span className="sr-only">Voltar para a página inicial</span>
                   </Link>
               </Button>
-              <div className="flex items-center gap-2">
-                  <BarChart className="h-7 w-7 text-primary" />
-                  <h1 className="text-xl font-bold text-foreground">NutriSmart Dashboard</h1>
+              <div className="flex items-center gap-3">
+                  <BarChart3 className="h-7 w-7 text-primary" />
+                  <h1 className="text-xl md:text-2xl font-bold text-foreground">Meu Dashboard</h1>
               </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
               {user && (
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <UserIcon className="h-5 w-5 text-primary" />
                     <span>Olá, {userName}!</span>
                 </div>
               )}
-            <Button variant="ghost" size="icon" onClick={() => setSettingsModalOpen(true)} disabled={!userId}>
+            <Button variant="ghost" size="icon" onClick={() => setSettingsModalOpen(true)} disabled={!userId} title="Definir Metas">
               <Settings className="h-5 w-5" />
               <span className="sr-only">Definir Metas</span>
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </Button>
-            <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId}>
+            <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Refeição
             </Button>

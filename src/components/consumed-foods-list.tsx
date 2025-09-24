@@ -11,37 +11,32 @@ interface ConsumedFoodsListProps {
   onMealDeleted: (entryId: string) => void;
 }
 
-const NutrientItem = ({ value, label, colorClass }: { value: string; label: string; colorClass: string }) => (
-  <div className="flex flex-col items-center">
-    <p className={`text-lg font-bold ${colorClass}`}>{value}</p>
-    <p className="text-sm text-muted-foreground">{label}</p>
+const NutrientItem = ({ value, label, colorClass }: { value: string; label: string; colorClass?: string }) => (
+  <div className="flex flex-col items-center text-center">
+    <p className={`text-lg font-bold ${colorClass || 'text-foreground'}`}>{value}</p>
+    <p className="text-xs text-muted-foreground">{label}</p>
   </div>
 );
 
 export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: ConsumedFoodsListProps) {
   if (mealEntries.length === 0) {
     return (
-      <Card className="shadow-md">
+      <Card className="shadow-sm rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Utensils className="h-5 w-5 text-primary" />
-            Alimentos Consumidos Hoje
+          <CardTitle className="flex items-center gap-2 font-semibold text-xl">
+            <Utensils className="h-6 w-6 text-primary" />
+            Refeições de Hoje
           </CardTitle>
-          <CardDescription>Lista detalhada dos alimentos e seus valores nutricionais.</CardDescription>
+          <CardDescription>Nenhuma refeição registrada hoje.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center h-40 text-center">
-            <p className="text-lg font-semibold text-muted-foreground">Nenhuma refeição adicionada ainda.</p>
-            <p className="text-sm text-muted-foreground">Clique em "Adicionar Refeição" para começar.</p>
+          <div className="flex flex-col items-center justify-center h-40 text-center rounded-xl bg-secondary/50">
+            <p className="text-base font-medium text-muted-foreground">Clique em "Adicionar Refeição" para começar.</p>
           </div>
         </CardContent>
       </Card>
     );
   }
-
-  const allMealsWithEntries = mealEntries.flatMap(entry =>
-    entry.mealData.alimentos.map(food => ({ ...food, entryId: entry.id }))
-  );
 
   const totalNutrients = mealEntries.reduce(
     (acc, entry) => {
@@ -54,24 +49,34 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
     },
     { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }
   );
+  
+  const getMealTypeName = (type: string) => {
+    switch (type) {
+        case 'cafe-da-manha': return 'Café da Manhã';
+        case 'almoco': return 'Almoço';
+        case 'jantar': return 'Jantar';
+        case 'lanche': return 'Lanche';
+        default: return 'Refeição';
+    }
+  }
 
   return (
-    <Card className="shadow-md">
+    <Card className="shadow-sm rounded-2xl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Utensils className="h-5 w-5 text-primary" />
-          Alimentos Consumidos Hoje
+        <CardTitle className="flex items-center gap-2 font-semibold text-xl">
+          <Utensils className="h-6 w-6 text-primary" />
+          Refeições de Hoje
         </CardTitle>
-        <CardDescription>Lista detalhada dos alimentos e seus valores nutricionais</CardDescription>
+        <CardDescription>Lista detalhada das refeições e seus valores nutricionais.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {mealEntries.map((entry, index) => (
-          <div key={entry.id}>
-            <div className="flex justify-between items-start">
+          <div key={entry.id} className="rounded-xl border p-4">
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <p className="font-semibold">{entry.mealData.alimentos.map(f => f.nome).join(', ')}</p>
+                <p className="font-semibold text-base">{getMealTypeName(entry.mealType)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {entry.mealData.totais.calorias.toFixed(0)} kcal
+                  {entry.mealData.alimentos.map(f => f.nome).join(', ')}
                 </p>
               </div>
               <AlertDialog>
@@ -96,24 +101,28 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            
+            <Separator />
+
+             <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+              <NutrientItem value={`${entry.mealData.totais.calorias.toFixed(0)}`} label="Calorias" colorClass="text-green-500" />
               <NutrientItem value={`${entry.mealData.totais.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-500" />
-              <NutrientItem value={`${entry.mealData.totais.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-500" />
-              <NutrientItem value={`${entry.mealData.totais.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-black" />
-              <NutrientItem value={`${entry.mealData.totais.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-gray-500" />
+              <NutrientItem value={`${entry.mealData.totais.carboidratos.toFixed(1)}g`} label="Carbs" colorClass="text-orange-500" />
+              <NutrientItem value={`${entry.mealData.totais.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-zinc-600" />
+              <NutrientItem value={`${entry.mealData.totais.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-zinc-400" />
             </div>
-            {index < mealEntries.length - 1 && <Separator className="mt-6" />}
           </div>
         ))}
       </CardContent>
-      <CardFooter className="flex-col items-start bg-secondary/50 p-6 rounded-b-xl">
+      <CardFooter className="flex-col items-start bg-secondary/50 p-6 rounded-b-2xl">
         <p className="font-semibold text-lg">Totais do Dia</p>
-        <div className="w-full mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
-            <NutrientItem value={`${Math.round(totalNutrients.calorias)}`} label="Calorias (kcal)" colorClass="text-green-500" />
-            <NutrientItem value={`${totalNutrients.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-500" />
-            <NutrientItem value={`${totalNutrients.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-500" />
-            <NutrientItem value={`${totalNutrients.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-black" />
-            <NutrientItem value={`${totalNutrients.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-gray-500" />
+        <Separator className="my-3"/>
+        <div className="w-full grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+            <NutrientItem value={`${Math.round(totalNutrients.calorias)}`} label="Calorias (kcal)" colorClass="text-green-600" />
+            <NutrientItem value={`${totalNutrients.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-600" />
+            <NutrientItem value={`${totalNutrients.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-600" />
+            <NutrientItem value={`${totalNutrients.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-zinc-700" />
+            <NutrientItem value={`${totalNutrients.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-zinc-500" />
         </div>
       </CardFooter>
     </Card>

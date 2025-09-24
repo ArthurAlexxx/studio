@@ -26,12 +26,16 @@ export default function DashboardPage() {
   const handleMealAdded = useCallback(() => {
     // A lógica de atualização agora é tratada pelo onSnapshot
     toast({
-        title: 'Refeição Adicionada!',
+        title: 'Refeição Adicionada! ✅',
         description: 'Sua refeição foi registrada com sucesso.',
     });
   }, [toast]);
 
   const handleMealDeleted = useCallback(async (entryId: string) => {
+    if (!entryId) {
+        toast({ title: "Erro", description: "ID da refeição não encontrado.", variant: "destructive" });
+        return;
+    }
     try {
         await deleteDoc(doc(db, "meal_entries", entryId));
         toast({
