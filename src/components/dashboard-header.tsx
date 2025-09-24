@@ -2,7 +2,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown, History, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,7 +27,6 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
   const [isAddMealModalOpen, setAddMealModalOpen] = useState(false);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
 
-
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -39,28 +38,6 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
 
   const userId = user?.uid || null;
   const userName = userProfile?.fullName.split(' ')[0] || user?.displayName?.split(' ')[0] || 'Usuário';
-
-  const menuItems = (
-      <>
-          <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-            <BarChart3 className="mr-2 h-4 w-4" />
-            <span>Meu Dashboard</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push('/history')}>
-            <History className="mr-2 h-4 w-4" />
-            <span>Meu Histórico</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Definir Metas</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Sair</span>
-          </DropdownMenuItem>
-      </>
-  );
 
   return (
     <>
@@ -85,7 +62,23 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {menuItems}
+                        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                            <BarChart3 className="mr-2 h-4 w-4" />
+                            <span>Meu Dashboard</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push('/history')}>
+                            <History className="mr-2 h-4 w-4" />
+                            <span>Meu Histórico</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Definir Metas</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Sair</span>
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -103,9 +96,26 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="right">
+                        <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
                         <div className="flex flex-col h-full">
                             <div className="flex-grow mt-8 grid gap-4 text-lg">
-                                {menuItems}
+                                <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-primary font-medium">
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                    <span>Meu Dashboard</span>
+                                </Link>
+                                <Link href="/history" className="flex items-center gap-2 text-muted-foreground hover:text-primary font-medium">
+                                    <History className="mr-2 h-4 w-4" />
+                                    <span>Meu Histórico</span>
+                                </Link>
+                                <button onClick={() => setSettingsModalOpen(true)} className="flex items-center gap-2 text-muted-foreground hover:text-primary font-medium">
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Definir Metas</span>
+                                </button>
+                                <button onClick={handleSignOut} className="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Sair</span>
+                                </button>
+                                
                                 <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm w-full mt-4">
                                   <Plus className="mr-2 h-4 w-4" />
                                   Adicionar Refeição
