@@ -1,3 +1,4 @@
+// src/components/header.tsx
 'use client';
 
 import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown, BarChart3, History } from 'lucide-react';
@@ -61,7 +62,7 @@ export default function Header() {
   );
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b transition-colors ${isScrolled ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60' : 'border-transparent bg-background'}`}>
+    <header className={`sticky top-0 z-50 w-full border-b transition-all ${isScrolled ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-md' : 'border-transparent bg-background'}`}>
       <div className="container flex h-20 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Leaf className="h-7 w-7 text-primary" />
