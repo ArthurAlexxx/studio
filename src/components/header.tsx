@@ -29,9 +29,8 @@ export default function Header() {
   const navLinks = (
     <>
       <NavLink href="/#features">Funcionalidades</NavLink>
-      <NavLink href="/#how-it-works">Como Funciona</NavLink>
-      <NavLink href="/#pricing">Planos</NavLink>
-      <NavLink href="/#testimonials">Depoimentos</NavLink>
+      <NavLink href="/#recipe-search">Receitas</NavLink>
+      <NavLink href="/#meal-planner">Planejador</NavLink>
     </>
   );
 
@@ -50,7 +49,7 @@ export default function Header() {
             <Link href="/login">Login</Link>
           </Button>
           <Button asChild>
-            <Link href="/register">Começar Agora</Link>
+            <Link href="/dashboard">Meu Dashboard</Link>
           </Button>
           <div className="md:hidden">
             <Sheet>
