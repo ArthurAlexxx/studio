@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 export default function Home() {
   const videoPlaceholderImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-image-1');
+  const howItWorksImage = PlaceHolderImages.find((img) => img.id === 'feature-1');
   
   return (
     <div className="flex min-h-dvh flex-col bg-muted/20">
@@ -53,7 +54,7 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-20 md:py-28">
+        <section id="features" className="py-20 md:py-28 bg-background">
           <div className="container px-4 md:px-6">
             <div className="mb-16 text-center animate-fade-in">
                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -64,21 +65,21 @@ export default function Home() {
               </p>
             </div>
             <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
-               <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all hover:shadow-2xl hover:scale-105 bg-card animate-fade-in" style={{animationDelay: '200ms'}}>
+               <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all hover:shadow-xl hover:scale-105 bg-card animate-fade-in border" style={{animationDelay: '200ms'}}>
                   <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Leaf className="h-10 w-10" />
                   </div>
                   <h3 className="text-2xl font-semibold mb-4">Planos de Refeições Inteligentes</h3>
                   <p className="text-muted-foreground">Receba planos alimentares personalizados que se adaptam às suas metas, preferências e restrições alimentares.</p>
                 </div>
-                <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all hover:shadow-2xl hover:scale-105 bg-card animate-fade-in" style={{animationDelay: '400ms'}}>
+                <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all hover:shadow-xl hover:scale-105 bg-card animate-fade-in border" style={{animationDelay: '400ms'}}>
                   <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <UtensilsCrossed className="h-10 w-10" />
                   </div>
                   <h3 className="text-2xl font-semibold mb-4">Chef Virtual com IA</h3>
                   <p className="text-muted-foreground">Descubra milhares de receitas deliciosas com base nos ingredientes que você tem em casa. Chega de desperdício!</p>
                 </div>
-                <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all hover:shadow-2xl hover:scale-105 bg-card animate-fade-in" style={{animationDelay: '600ms'}}>
+                <div className="flex flex-col items-center text-center p-8 rounded-2xl transition-all hover:shadow-xl hover:scale-105 bg-card animate-fade-in border" style={{animationDelay: '600ms'}}>
                   <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <BarChart className="h-10 w-10" />
                   </div>
@@ -90,7 +91,7 @@ export default function Home() {
         </section>
 
         {/* How it Works Section */}
-        <section id="how-it-works" className="py-20 md:py-28 bg-background">
+        <section id="how-it-works" className="py-20 md:py-28 bg-muted/30">
           <div className="container px-4 md:px-6">
              <div className="mb-16 text-center animate-fade-in">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -100,27 +101,40 @@ export default function Home() {
                 Transforme sua rotina alimentar em apenas 4 passos simples.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
-              {[
-                { icon: UserCheck, title: 'Crie seu Perfil', description: 'Defina suas metas, restrições e preferências alimentares.' },
-                { icon: Sparkles, title: 'Receba Planos com IA', description: 'Nossa IA gera planos alimentares personalizados para você.' },
-                { icon: MessageCircle, title: 'Converse com o Assistente', description: 'Tire dúvidas e receba dicas com nosso chatbot inteligente.' },
-                { icon: TrendingUp, title: 'Acompanhe seu Progresso', description: 'Visualize sua evolução com gráficos e indicadores de saúde.' },
-              ].map((step, index) => (
-                <div key={step.title} className="flex items-start gap-6 animate-fade-in pt-8" style={{ animationDelay: `${200 * (index + 1)}ms` }}>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xl">{index + 1}</div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground">{step.description}</p>
-                  </div>
+            <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+                <div className="relative h-96 w-full overflow-hidden rounded-2xl shadow-xl animate-fade-in" style={{animationDelay: '200ms'}}>
+                    {howItWorksImage && (
+                        <Image
+                            src={howItWorksImage.imageUrl}
+                            alt={howItWorksImage.description}
+                            fill
+                            className="object-cover"
+                            data-ai-hint={howItWorksImage.imageHint}
+                        />
+                    )}
                 </div>
-              ))}
+                <div className="space-y-10">
+                    {[
+                        { icon: UserCheck, title: 'Crie seu Perfil', description: 'Defina suas metas, restrições e preferências alimentares.' },
+                        { icon: Sparkles, title: 'Receba Planos com IA', description: 'Nossa IA gera planos alimentares personalizados para você.' },
+                        { icon: MessageCircle, title: 'Converse com o Assistente', description: 'Tire dúvidas e receba dicas com nosso chatbot inteligente.' },
+                        { icon: TrendingUp, title: 'Acompanhe seu Progresso', description: 'Visualize sua evolução com gráficos e indicadores de saúde.' },
+                    ].map((step, index) => (
+                        <div key={step.title} className="flex items-start gap-6 animate-fade-in" style={{ animationDelay: `${400 + 200 * index}ms` }}>
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xl">{index + 1}</div>
+                            <div>
+                                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                                <p className="text-muted-foreground">{step.description}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
           </div>
         </section>
 
         {/* Who it's for Section */}
-        <section id="who-its-for" className="py-20 md:py-28">
+        <section id="who-its-for" className="py-20 md:py-28 bg-background">
             <div className="container px-4 md:px-6">
                 <div className="mb-16 text-center animate-fade-in">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -152,7 +166,7 @@ export default function Home() {
         </section>
         
         {/* Video Section */}
-        <section className="py-20 md:py-28 bg-background">
+        <section className="py-20 md:py-28 bg-muted/30">
             <div className="container px-4 md:px-6 text-center">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-6">
                     Veja o NutriSmart em Ação
@@ -174,7 +188,7 @@ export default function Home() {
         </section>
 
         {/* Testimonials & Results Section */}
-        <section id="testimonials" className="py-20 md:py-28">
+        <section id="testimonials" className="py-20 md:py-28 bg-background">
             <div className="container px-4 md:px-6">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
                     <div>
@@ -229,3 +243,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
