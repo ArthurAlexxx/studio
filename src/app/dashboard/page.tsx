@@ -24,74 +24,58 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async (currentUserId: string) => {
-        setLoading(true);
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const { data, error } = await supabase
-              .from('meal_entries')
-              .select('meal_data')
-              .eq('user_id', currentUserId)
-              .eq('date', today);
+    const fetchAndSetData = async (currentUserId: string) => {
+      if (!currentUserId) {
+        setLoading(false);
+        return;
+      }
 
-            if (error) throw error;
-            
-            const loadedMeals = data.map((entry: any) => entry.meal_data);
-            setMeals(loadedMeals);
+      setLoading(true);
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+          .from('meal_entries')
+          .select('meal_data')
+          .eq('user_id', currentUserId)
+          .eq('date', today);
 
-        } catch (error: any) {
-            toast({
-              title: "Erro ao carregar dados",
-              description: error.message || "Não foi possível buscar seus dados. Tente recarregar a página.",
-              variant: "destructive"
-            });
-        } finally {
-            setLoading(false);
-        }
+        if (error) throw error;
+        
+        const loadedMeals = data.map((entry: any) => entry.meal_data);
+        setMeals(loadedMeals);
+      } catch (error: any) {
+        toast({
+          title: "Erro ao carregar dados",
+          description: error.message || "Não foi possível buscar seus dados. Tente recarregar a página.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
     };
     
-    // Adicione um listener para mudanças no estado de autenticação
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user.id) {
-         if(session.user.id !== userId) {
-            setUserId(session.user.id);
-            fetchData(session.user.id);
-         } else if (userId) {
-            setLoading(false);
-         }
-       } else if (event === 'SIGNED_OUT') {
-         setMeals([]);
-         setUserId(null);
-         setLoading(false);
-       } else if (event === 'TOKEN_REFRESHED') {
-        // Se a sessão for atualizada, podemos re-buscar os dados caso seja necessário.
-        if (session?.user.id && userId) {
-           fetchData(session.user.id);
+      const currentUserId = session?.user?.id ?? null;
+      setUserId(currentUserId);
+
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if(currentUserId) {
+          fetchAndSetData(currentUserId);
+        } else {
+          // Se não há usuário na sessão inicial, paramos o carregamento
+          setLoading(false);
         }
-       }
+      } else if (event === 'SIGNED_OUT') {
+        setMeals([]);
+        setLoading(false);
+      }
     });
 
-    // Função para verificar a sessão inicial, caso o listener não dispare imediatamente.
-    const checkInitialSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user.id) {
-            if(session.user.id !== userId) {
-                setUserId(session.user.id);
-                fetchData(session.user.id);
-            }
-        } else {
-            setLoading(false); // Não há usuário, para o loading.
-        }
-    }
-    checkInitialSession();
-
-
-    // Remova o listener quando o componente for desmontado
     return () => {
       authListener.subscription.unsubscribe();
     };
 
-  }, [supabase, toast, userId]);
+  }, [supabase, toast]);
 
   const handleMealAdded = (newMealData: MealData) => {
     setMeals(prevMeals => [...prevMeals, newMealData]);
