@@ -1,7 +1,7 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { BarChart, ChevronLeft, Plus, LogOut, User as UserIcon } from 'lucide-react';
+import { BarChart, ChevronLeft, Plus, LogOut, User as UserIcon, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
@@ -10,15 +10,21 @@ import type { MealData } from '@/types/meal';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
+import { type UserProfile } from '@/types/user';
+import SettingsModal from './settings-modal';
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
   user: User | null;
+  userProfile: UserProfile | null;
+  onProfileUpdate: (updatedProfile: Partial<UserProfile>) => void;
 }
 
-export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderProps) {
+export default function DashboardHeader({ onMealAdded, user, userProfile, onProfileUpdate }: DashboardHeaderProps) {
   const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddMealModalOpen, setAddMealModalOpen] = useState(false);
+  const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+
 
   const handleSignOut = async () => {
     try {
@@ -55,18 +61,31 @@ export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderPr
                     <span>Olá, {userName}!</span>
                 </div>
               )}
+            <Button variant="ghost" size="icon" onClick={() => setSettingsModalOpen(true)} disabled={!userId}>
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Definir Metas</span>
+            </Button>
             <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </Button>
-            <Button onClick={() => setIsModalOpen(true)} disabled={!userId}>
+            <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId}>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Refeição
             </Button>
           </div>
         </div>
       </header>
-      <AddMealModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} onMealAdded={onMealAdded} userId={userId} />
+      <AddMealModal isOpen={isAddMealModalOpen} onOpenChange={setAddMealModalOpen} onMealAdded={onMealAdded} userId={userId} />
+      {userProfile && userId && (
+         <SettingsModal
+            isOpen={isSettingsModalOpen}
+            onOpenChange={setSettingsModalOpen}
+            userProfile={userProfile}
+            userId={userId}
+            onProfileUpdate={onProfileUpdate}
+         />
+      )}
     </>
   );
 }

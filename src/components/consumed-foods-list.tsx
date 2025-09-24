@@ -1,11 +1,14 @@
 // src/components/consumed-foods-list.tsx
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import type { MealData } from '@/types/meal';
-import { Utensils } from 'lucide-react';
+import type { MealEntry } from '@/types/meal';
+import { Utensils, Trash2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface ConsumedFoodsListProps {
-  meals: MealData[];
+  mealEntries: MealEntry[];
+  onMealDeleted: (entryId: string) => void;
 }
 
 const NutrientItem = ({ value, label, colorClass }: { value: string; label: string; colorClass: string }) => (
@@ -15,8 +18,8 @@ const NutrientItem = ({ value, label, colorClass }: { value: string; label: stri
   </div>
 );
 
-export default function ConsumedFoodsList({ meals }: ConsumedFoodsListProps) {
-  if (meals.length === 0) {
+export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: ConsumedFoodsListProps) {
+  if (mealEntries.length === 0) {
     return (
       <Card className="shadow-md">
         <CardHeader>
@@ -36,14 +39,17 @@ export default function ConsumedFoodsList({ meals }: ConsumedFoodsListProps) {
     );
   }
 
-  const allFoods = meals.flatMap(meal => meal.alimentos);
-  const totalNutrients = meals.reduce(
-    (acc, meal) => {
-      acc.calorias += meal.totais.calorias;
-      acc.proteinas += meal.totais.proteinas;
-      acc.carboidratos += meal.totais.carboidratos;
-      acc.gorduras += meal.totais.gorduras;
-      acc.fibras += meal.totais.fibras;
+  const allMealsWithEntries = mealEntries.flatMap(entry =>
+    entry.mealData.alimentos.map(food => ({ ...food, entryId: entry.id }))
+  );
+
+  const totalNutrients = mealEntries.reduce(
+    (acc, entry) => {
+      acc.calorias += entry.mealData.totais.calorias;
+      acc.proteinas += entry.mealData.totais.proteinas;
+      acc.carboidratos += entry.mealData.totais.carboidratos;
+      acc.gorduras += entry.mealData.totais.gorduras;
+      acc.fibras += entry.mealData.totais.fibras;
       return acc;
     },
     { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }
@@ -59,24 +65,44 @@ export default function ConsumedFoodsList({ meals }: ConsumedFoodsListProps) {
         <CardDescription>Lista detalhada dos alimentos e seus valores nutricionais</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {allFoods.map((food, index) => (
-          <div key={index}>
+        {mealEntries.map((entry, index) => (
+          <div key={entry.id}>
             <div className="flex justify-between items-start">
               <div>
-                <p className="font-semibold">{food.nome}</p>
-                <p className="text-sm text-muted-foreground">{food.porcao} {food.unidade}</p>
+                <p className="font-semibold">{entry.mealData.alimentos.map(f => f.nome).join(', ')}</p>
+                <p className="text-sm text-muted-foreground">
+                  {entry.mealData.totais.calorias.toFixed(0)} kcal
+                </p>
               </div>
-              <div className="text-sm font-semibold bg-secondary px-2 py-1 rounded-md">
-                {Math.round(food.calorias)} kcal
-              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Isso removerá permanentemente a refeição dos seus registros.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onMealDeleted(entry.id)} className="bg-destructive hover:bg-destructive/90">
+                        Sim, remover
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <NutrientItem value={`${food.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-500" />
-              <NutrientItem value={`${food.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-500" />
-              <NutrientItem value={`${food.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-black" />
-              <NutrientItem value={`${food.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-gray-500" />
+             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              <NutrientItem value={`${entry.mealData.totais.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-500" />
+              <NutrientItem value={`${entry.mealData.totais.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-500" />
+              <NutrientItem value={`${entry.mealData.totais.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-black" />
+              <NutrientItem value={`${entry.mealData.totais.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-gray-500" />
             </div>
-            {index < allFoods.length - 1 && <Separator className="mt-6" />}
+            {index < mealEntries.length - 1 && <Separator className="mt-6" />}
           </div>
         ))}
       </CardContent>

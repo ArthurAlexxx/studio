@@ -13,7 +13,7 @@ import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { MealData } from '@/types/meal';
 import { db } from '@/lib/firebase/client';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -63,7 +63,6 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
     }
     
     try {
-      // O webhook externo permanece o mesmo
       const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
       const requests = data.foods.map(food => {
         const payload = {
@@ -105,21 +104,16 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
           totais: { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }
       });
       
-      // Salva no Firestore
       await addDoc(collection(db, 'meal_entries'), {
         userId: userId,
         date: new Date().toISOString().split('T')[0],
         mealType: data.mealType,
         mealData: combinedMealData,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       });
 
       onMealAdded(combinedMealData);
 
-      toast({
-        title: 'Refeição Adicionada!',
-        description: 'Sua refeição foi registrada com sucesso.',
-      });
       form.reset();
       onOpenChange(false);
     } catch(error: any) {

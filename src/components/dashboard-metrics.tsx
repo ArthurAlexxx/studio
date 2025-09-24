@@ -29,9 +29,9 @@ export default function DashboardMetrics({ meals, userProfile }: DashboardMetric
     { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
   );
 
-  // Metas diárias (poderiam vir de um perfil de usuário no futuro).
-  const calorieGoal = 2000;
-  const proteinGoal = 140;
+  // Metas diárias do perfil do usuário, com fallback.
+  const calorieGoal = userProfile?.calorieGoal || 2000;
+  const proteinGoal = userProfile?.proteinGoal || 140;
 
   // Prepara os dados para os gráficos.
   const macrosData = [

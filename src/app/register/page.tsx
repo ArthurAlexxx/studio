@@ -55,6 +55,8 @@ export default function RegisterPage() {
             email: values.email,
             currentStreak: 0,
             lastLoginDate: null,
+            calorieGoal: 2000,
+            proteinGoal: 140,
         });
 
         toast({

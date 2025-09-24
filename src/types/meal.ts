@@ -24,10 +24,10 @@ export interface MealData {
 }
 
 export interface MealEntry {
-  id: number;
-  user_id: string;
+  id: string; // Changed to string for Firestore document ID
+  userId: string;
   date: string;
-  meal_type: string;
-  meal_data: MealData;
-  created_at: string;
+  mealType: string;
+  mealData: MealData;
+  createdAt: any; // Can be Timestamp
 }

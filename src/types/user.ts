@@ -5,4 +5,6 @@ export interface UserProfile {
     email: string;
     currentStreak: number;
     lastLoginDate: string | null;
+    calorieGoal: number;
+    proteinGoal: number;
 }
