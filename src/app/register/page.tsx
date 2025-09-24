@@ -7,13 +7,12 @@ import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Leaf, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase/client';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -27,7 +26,6 @@ const formSchema = z.object({
 });
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
@@ -52,6 +50,9 @@ export default function RegisterPage() {
         // Atualiza o perfil do usuário no Firebase Auth
         await updateProfile(user, { displayName: values.name });
 
+        // Envia o e-mail de verificação
+        await sendEmailVerification(user);
+
         // Cria um documento para o usuário no Firestore
         await setDoc(doc(db, "users", user.uid), {
             fullName: values.name,
@@ -60,13 +61,11 @@ export default function RegisterPage() {
 
         setSuccess(true);
         toast({
-            title: "Registro realizado com sucesso!",
-            description: "Você será redirecionado para o dashboard em instantes...",
+            title: "Registro quase completo!",
+            description: "Enviamos um e-mail de confirmação para você. Por favor, verifique sua caixa de entrada.",
+            duration: 6000,
         });
         
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
       } else {
         throw new Error("Não foi possível criar o usuário.");
       }
@@ -99,8 +98,8 @@ export default function RegisterPage() {
           {success ? (
             <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
               <CheckCircle className="h-16 w-16 text-green-500" />
-              <h3 className="text-xl font-semibold text-foreground">Registro realizado com sucesso!</h3>
-              <p className="text-muted-foreground">Você será redirecionado para o seu dashboard em instantes.</p>
+              <h3 className="text-xl font-semibold text-foreground">Confirme seu E-mail</h3>
+              <p className="text-muted-foreground">Enviamos um link de verificação para seu e-mail. Por favor, clique no link para ativar sua conta e poder fazer o login.</p>
             </div>
           ) : (
             <Form {...form}>

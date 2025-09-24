@@ -23,6 +23,18 @@ export default function DashboardPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        if (!currentUser.emailVerified) {
+          toast({
+            title: "Acesso Negado",
+            description: "Por favor, verifique seu e-mail para acessar o dashboard.",
+            variant: "destructive",
+            duration: 5000,
+          });
+          auth.signOut();
+          router.push('/login');
+          return;
+        }
+
         setUser(currentUser);
         try {
           const today = new Date().toISOString().split('T')[0];

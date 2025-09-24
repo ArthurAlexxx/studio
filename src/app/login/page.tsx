@@ -38,17 +38,46 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      
+      if (!userCredential.user.emailVerified) {
+        toast({
+          title: "E-mail não verificado",
+          description: "Por favor, verifique seu e-mail antes de fazer login. Cheque sua caixa de entrada.",
+          variant: "destructive",
+          duration: 6000,
+        });
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+      
       toast({
         title: "Sucesso!",
         description: "Login feito com sucesso! Redirecionando...",
       });
       router.push('/dashboard');
+
     } catch (error: any) {
-      setError(error.message || 'Ocorreu um erro durante o login.');
+      const defaultMessage = 'Ocorreu um erro durante o login.';
+      let errorMessage = defaultMessage;
+
+      switch(error.code) {
+        case 'auth/invalid-credential':
+          errorMessage = 'Credenciais inválidas. Verifique seu e-mail e senha.';
+          break;
+        case 'auth/user-not-found':
+           errorMessage = 'Nenhum usuário encontrado com este e-mail.';
+           break;
+        case 'auth/wrong-password':
+            errorMessage = 'Senha incorreta. Tente novamente.';
+            break;
+      }
+      
+      setError(errorMessage);
       toast({
         title: "Erro de Login",
-        description: error.code === 'auth/invalid-credential' ? 'Credenciais inválidas. Verifique seu e-mail e senha.' : error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
