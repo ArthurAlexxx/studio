@@ -22,3 +22,12 @@ export interface MealData {
   alimentos: Food[];
   totais: Totals;
 }
+
+export interface MealEntry {
+  id: number;
+  user_id: string;
+  date: string;
+  meal_type: string;
+  meal_data: MealData;
+  created_at: string;
+}

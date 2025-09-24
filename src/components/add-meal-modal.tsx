@@ -12,6 +12,7 @@ import * as z from 'zod';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { MealData } from '@/types/meal';
+import { createClient } from '@/lib/supabase/client';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -29,11 +30,12 @@ type AddMealFormValues = z.infer<typeof formSchema>;
 interface AddMealModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onMealAdded: (mealData: MealData[]) => void;
+  onMealAdded: (mealData: MealData) => void;
 }
 
 export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddMealModalProps) {
   const { toast } = useToast();
+  const supabase = createClient();
   const form = useForm<AddMealFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -60,28 +62,18 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
         };
         return fetch(webhookUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         }).then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                return response.json();
-            } else {
-                return null;
-            }
+            return contentType && contentType.includes("application/json") ? response.json() : null;
         });
       });
       
-      const results = await Promise.all(requests);
-      
-      const processedResults = results.filter(r => r).flat();
-      
-      if (processedResults.length === 0) {
+      const results: (MealData[] | null) = (await Promise.all(requests)).flat().filter(r => r);
+
+      if (!results || results.length === 0) {
         toast({
           title: 'Nenhum dado nutricional retornado',
           description: 'O serviço não retornou informações para os alimentos informados.',
@@ -89,8 +81,35 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
         });
         return;
       }
+      
+      const combinedMealData: MealData = results.reduce((acc, meal) => {
+        acc.alimentos.push(...meal.alimentos);
+        acc.totais.calorias += meal.totais.calorias;
+        acc.totais.proteinas += meal.totais.proteinas;
+        acc.totais.carboidratos += meal.totais.carboidratos;
+        acc.totais.gorduras += meal.totais.gorduras;
+        acc.totais.fibras += meal.totais.fibras;
+        return acc;
+      }, {
+          alimentos: [],
+          totais: { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }
+      });
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado.");
 
-      onMealAdded(processedResults);
+      const { error: dbError } = await supabase
+        .from('meal_entries')
+        .insert([{ 
+            user_id: user.id, 
+            date: new Date().toISOString().split('T')[0],
+            meal_type: data.mealType,
+            meal_data: combinedMealData
+        }]);
+
+      if (dbError) throw dbError;
+
+      onMealAdded(combinedMealData);
 
       toast({
         title: 'Refeição Adicionada!',
@@ -98,11 +117,11 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
       });
       form.reset();
       onOpenChange(false);
-    } catch(error) {
+    } catch(error: any) {
        console.error("Failed to submit meal", error);
         toast({
             title: "Erro ao adicionar refeição",
-            description: "Não foi possível conectar ao servidor para adicionar sua refeição. Tente novamente.",
+            description: error.message || "Não foi possível conectar ao servidor para adicionar sua refeição. Tente novamente.",
             variant: "destructive"
         });
     }
@@ -248,5 +267,4 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
         </Form>
       </DialogContent>
     </Dialog>
-  );
-}
+  
