@@ -89,7 +89,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   section {
-    @apply w-full py-12 md:py-24 lg:py-32;
+    @apply w-full;
   }
 }
 
