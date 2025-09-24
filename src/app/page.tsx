@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 export default function Home() {
   const videoPlaceholderImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
   const heroImage = PlaceHolderImages.find((img) => img.id === 'feature-1');
-  const howItWorksImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
+  const howItWorksImage = PlaceHolderImages.find((img) => img.id === 'feature-2');
   
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -113,7 +113,7 @@ export default function Home() {
                         />
                     )}
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-8">
                     {[
                         { icon: UserCheck, title: 'Crie seu Perfil', description: 'Defina suas metas, restrições e preferências alimentares.' },
                         { icon: Sparkles, title: 'Receba Planos com IA', description: 'Nossa IA gera planos alimentares personalizados para você.' },
