@@ -48,9 +48,14 @@ export default function LoginPage() {
         description: "Login feito com sucesso! Redirecionando...",
       });
       router.push('/dashboard');
-      router.refresh(); // Garante que a página do dashboard recarregue os dados da nova sessão.
+      router.refresh();
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o login.');
+      toast({
+        title: "Erro de Login",
+        description: error.message || 'Verifique seu e-mail e senha.',
+        variant: "destructive"
+      });
       setLoading(false);
     }
   };

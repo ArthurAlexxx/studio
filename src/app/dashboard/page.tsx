@@ -9,7 +9,7 @@ import DashboardMetrics from '@/components/dashboard-metrics';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 type UserProfile = {
   id: string;
@@ -49,56 +49,61 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchUserAndData = async (user: User) => {
-      // 1. Fetch user profile from 'profiles' table
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileError) {
-        toast({
-          title: "Erro ao carregar perfil",
-          description: "Não foi possível buscar os dados do seu perfil.",
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileError) throw profileError;
+        
+        setUserProfile({
+            id: user.id,
+            full_name: profile.full_name,
+            email: user.email,
+        });
+
+        await fetchMeals(user.id);
+
+      } catch (error: any) {
+         toast({
+          title: "Erro ao carregar dados",
+          description: error.message || "Não foi possível buscar os dados do seu perfil.",
           variant: "destructive"
         });
+      } finally {
         setLoading(false);
-        return;
-      }
-      
-      setUserProfile({
-          id: user.id,
-          full_name: profile.full_name,
-          email: user.email,
-      });
-
-      // 2. Fetch meals for this user
-      await fetchMeals(user.id);
-      setLoading(false);
-    };
-
-    const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-         await fetchUserAndData(session.user);
-      } else {
-         setLoading(false);
       }
     };
-    
-    checkInitialSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const handleAuthChange = async (event: string, session: any) => {
       const user = session?.user;
-      if (user && user.id !== userProfile?.id) {
-        setLoading(true);
-        fetchUserAndData(user);
-      } else if (!user) {
+      
+      if (user) {
+        if (user.id !== userProfile?.id) {
+          setLoading(true);
+          await fetchUserAndData(user);
+        }
+      } else {
         setUserProfile(null);
         setMeals([]);
         setLoading(false);
       }
-    });
+    };
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await handleAuthChange('INITIAL_SESSION', session);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    checkInitialSession();
 
     return () => {
       authListener.subscription.unsubscribe();

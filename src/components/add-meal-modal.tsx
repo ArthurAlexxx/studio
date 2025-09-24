@@ -56,9 +56,10 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
     if (!userId) {
       toast({
         title: "Erro de autenticação",
-        description: "Usuário não identificado. Por favor, faça login novamente.",
+        description: "Usuário não identificado. A página será recarregada.",
         variant: "destructive"
       });
+      setTimeout(() => window.location.reload(), 2000);
       return;
     }
     
