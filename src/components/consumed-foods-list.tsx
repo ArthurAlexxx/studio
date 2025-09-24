@@ -70,13 +70,13 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
         <CardDescription>Lista detalhada das refeições e seus valores nutricionais.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {mealEntries.map((entry, index) => (
+        {mealEntries.map((entry) => (
           <div key={entry.id} className="rounded-xl border p-4">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="font-semibold text-base">{getMealTypeName(entry.mealType)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {entry.mealData.alimentos.map(f => f.nome).join(', ')}
+                  {entry.mealData.alimentos.map(f => `${f.nome} (${f.porcao}${f.unidade})`).join(', ')}
                 </p>
               </div>
               <AlertDialog>
