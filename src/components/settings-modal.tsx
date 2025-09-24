@@ -1,10 +1,12 @@
 // src/components/settings-modal.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,6 +33,8 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onOpenChange, userProfile, userId, onProfileUpdate }: SettingsModalProps) {
   const { toast } = useToast();
+  const [autoCalculate, setAutoCalculate] = useState(true);
+
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,6 +44,14 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
   });
   
   const { isSubmitting } = form.formState;
+  const calorieGoal = form.watch('calorieGoal');
+
+  useEffect(() => {
+    if (autoCalculate) {
+      const calculatedProtein = Math.round((calorieGoal * 0.30) / 4);
+      form.setValue('proteinGoal', calculatedProtein > 0 ? calculatedProtein : 1);
+    }
+  }, [calorieGoal, autoCalculate, form]);
 
   const onSubmit = async (data: SettingsFormValues) => {
     try {
@@ -71,7 +83,7 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Definir Metas Diárias</DialogTitle>
           <DialogDescription>
-            Personalize suas metas de calorias e proteínas para um acompanhamento mais preciso.
+            Personalize suas metas ou deixe que o app calcule a proteína para você.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -89,6 +101,18 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
                 </FormItem>
               )}
             />
+            
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                    <FormLabel className="font-semibold">Calcular proteína automaticamente</FormLabel>
+                    <p className="text-xs text-muted-foreground">Recomendado (30% das calorias)</p>
+                </div>
+                <Switch
+                    checked={autoCalculate}
+                    onCheckedChange={setAutoCalculate}
+                />
+            </div>
+
             <FormField
               control={form.control}
               name="proteinGoal"
@@ -96,7 +120,7 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
                 <FormItem>
                   <FormLabel className="font-semibold">Meta de Proteínas (g)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Ex: 150" {...field} />
+                    <Input type="number" placeholder="Ex: 150" {...field} disabled={autoCalculate} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
