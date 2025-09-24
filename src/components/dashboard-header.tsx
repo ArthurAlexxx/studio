@@ -2,7 +2,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown } from 'lucide-react';
+import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown, History } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
@@ -61,6 +61,14 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                     <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      <span>Meu Dashboard</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/history')}>
+                      <History className="mr-2 h-4 w-4" />
+                      <span>Meu Histórico</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Definir Metas</span>

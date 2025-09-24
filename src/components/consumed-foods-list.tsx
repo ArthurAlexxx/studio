@@ -2,9 +2,12 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { MealEntry } from '@/types/meal';
-import { Utensils, Trash2 } from 'lucide-react';
+import { Utensils, Trash2, CalendarOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ConsumedFoodsListProps {
   mealEntries: MealEntry[];
@@ -19,19 +22,39 @@ const NutrientItem = ({ value, label, colorClass }: { value: string; label: stri
 );
 
 export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: ConsumedFoodsListProps) {
+    const { toast } = useToast();
+
+    const handleLocalMealDeleted = async (entryId: string) => {
+        if (!entryId) {
+            toast({ title: "Erro", description: "ID da refeição não encontrado.", variant: "destructive" });
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, "meal_entries", entryId));
+            onMealDeleted(entryId); // Callback to inform parent component
+        } catch(error: any) {
+            toast({
+                title: "Erro ao remover refeição",
+                description: error.message || "Não foi possível remover a refeição.",
+                variant: "destructive"
+            });
+        }
+    };
+
+
   if (mealEntries.length === 0) {
     return (
       <Card className="shadow-sm rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-semibold text-xl">
             <Utensils className="h-6 w-6 text-primary" />
-            Refeições de Hoje
+            Refeições Registradas
           </CardTitle>
-          <CardDescription>Nenhuma refeição registrada hoje.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center h-40 text-center rounded-xl bg-secondary/50">
-            <p className="text-base font-medium text-muted-foreground">Clique em "Adicionar Refeição" para começar.</p>
+            <CalendarOff className="h-10 w-10 text-muted-foreground mb-4" />
+            <p className="text-base font-medium text-muted-foreground">Nenhuma refeição encontrada para esta data.</p>
           </div>
         </CardContent>
       </Card>
@@ -65,7 +88,7 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-semibold text-xl">
           <Utensils className="h-6 w-6 text-primary" />
-          Refeições de Hoje
+          Refeições do Dia
         </CardTitle>
         <CardDescription>Lista detalhada das refeições e seus valores nutricionais.</CardDescription>
       </CardHeader>
@@ -94,7 +117,7 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onMealDeleted(entry.id)} className="bg-destructive hover:bg-destructive/90">
+                    <AlertDialogAction onClick={() => handleLocalMealDeleted(entry.id)} className="bg-destructive hover:bg-destructive/90">
                         Sim, remover
                     </AlertDialogAction>
                     </AlertDialogFooter>
@@ -114,17 +137,19 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
           </div>
         ))}
       </CardContent>
-      <CardFooter className="flex-col items-start bg-secondary/50 p-6 rounded-b-2xl">
-        <p className="font-semibold text-lg">Totais do Dia</p>
-        <Separator className="my-3"/>
-        <div className="w-full grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
-            <NutrientItem value={`${Math.round(totalNutrients.calorias)}`} label="Calorias (kcal)" colorClass="text-green-600" />
-            <NutrientItem value={`${totalNutrients.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-600" />
-            <NutrientItem value={`${totalNutrients.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-600" />
-            <NutrientItem value={`${totalNutrients.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-zinc-700" />
-            <NutrientItem value={`${totalNutrients.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-zinc-500" />
-        </div>
-      </CardFooter>
+       {totalNutrients.calorias > 0 && (
+          <CardFooter className="flex-col items-start bg-secondary/50 p-6 rounded-b-2xl">
+            <p className="font-semibold text-lg">Totais do Dia</p>
+            <Separator className="my-3"/>
+            <div className="w-full grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+                <NutrientItem value={`${Math.round(totalNutrients.calorias)}`} label="Calorias (kcal)" colorClass="text-green-600" />
+                <NutrientItem value={`${totalNutrients.proteinas.toFixed(1)}g`} label="Proteínas" colorClass="text-blue-600" />
+                <NutrientItem value={`${totalNutrients.carboidratos.toFixed(1)}g`} label="Carboidratos" colorClass="text-orange-600" />
+                <NutrientItem value={`${totalNutrients.gorduras.toFixed(1)}g`} label="Gorduras" colorClass="text-zinc-700" />
+                <NutrientItem value={`${totalNutrients.fibras.toFixed(1)}g`} label="Fibras" colorClass="text-zinc-500" />
+            </div>
+          </CardFooter>
+        )}
     </Card>
   );
 }

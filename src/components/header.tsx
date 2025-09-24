@@ -1,6 +1,6 @@
 'use client';
 
-import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown, BarChart3, History } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -87,7 +87,12 @@ export default function Header() {
                       <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                        Meu Dashboard
+                         <BarChart3 className="mr-2 h-4 w-4" />
+                        <span>Meu Dashboard</span>
+                      </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => router.push('/history')}>
+                        <History className="mr-2 h-4 w-4" />
+                        <span>Meu Histórico</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
