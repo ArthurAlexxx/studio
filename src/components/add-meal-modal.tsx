@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { MealData } from '@/types/meal';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -28,15 +29,16 @@ type AddMealFormValues = z.infer<typeof formSchema>;
 interface AddMealModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onMealAdded: (mealData: MealData[]) => void;
 }
 
-export default function AddMealModal({ isOpen, onOpenChange }: AddMealModalProps) {
+export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddMealModalProps) {
   const { toast } = useToast();
   const form = useForm<AddMealFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       mealType: '',
-      foods: [{ name: '', portion: 0, unit: '' }],
+      foods: [{ name: '', portion: 0, unit: 'g' }],
     },
   });
 
@@ -48,14 +50,49 @@ export default function AddMealModal({ isOpen, onOpenChange }: AddMealModalProps
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: AddMealFormValues) => {
-    console.log(data);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast({
-      title: 'Refeição Adicionada!',
-      description: 'Sua refeição foi registrada com sucesso.',
-    });
-    form.reset();
-    onOpenChange(false);
+    try {
+      const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
+      const requests = data.foods.map(food => {
+        const payload = {
+          alimento: food.name,
+          porcao: food.portion,
+          unidade: food.unit,
+          // calorias: 0, // Mocked value, as per user's example it's not in the form
+        };
+        return fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        });
+      });
+      
+      const results = await Promise.all(requests);
+      
+      // The webhook seems to return an array with one element which is the object we want.
+      const processedResults = results.flat();
+      onMealAdded(processedResults);
+
+      toast({
+        title: 'Refeição Adicionada!',
+        description: 'Sua refeição foi registrada com sucesso.',
+      });
+      form.reset();
+      onOpenChange(false);
+    } catch(error) {
+       console.error("Failed to submit meal", error);
+        toast({
+            title: "Erro ao adicionar refeição",
+            description: "Não foi possível conectar ao servidor para adicionar sua refeição. Tente novamente.",
+            variant: "destructive"
+        });
+    }
   };
 
   return (
@@ -100,7 +137,7 @@ export default function AddMealModal({ isOpen, onOpenChange }: AddMealModalProps
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ name: '', portion: 0, unit: '' })}
+                  onClick={() => append({ name: '', portion: 0, unit: 'g' })}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Adicionar Alimento

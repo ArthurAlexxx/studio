@@ -7,8 +7,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
 import { useState } from 'react';
+import type { MealData } from '@/types/meal';
 
-export default function DashboardHeader() {
+interface DashboardHeaderProps {
+  onMealAdded: (mealData: MealData[]) => void;
+}
+
+export default function DashboardHeader({ onMealAdded }: DashboardHeaderProps) {
   const router = useRouter();
   const supabase = createClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +55,7 @@ export default function DashboardHeader() {
           </div>
         </div>
       </header>
-      <AddMealModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
+      <AddMealModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} onMealAdded={onMealAdded} />
     </>
   );
 }

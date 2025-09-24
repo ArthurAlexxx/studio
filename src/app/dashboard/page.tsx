@@ -1,27 +1,54 @@
 // src/app/dashboard/page.tsx
+'use client';
+
+import { useState } from 'react';
 import { BarChart, Flame, Beef, Droplets, Repeat } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { DashboardCharts } from '@/components/dashboard-charts';
 import DashboardHeader from '@/components/dashboard-header';
+import ConsumedFoodsList from '@/components/consumed-foods-list';
+import type { MealData } from '@/types/meal';
 
 export default function DashboardPage() {
+  const [meals, setMeals] = useState<MealData[]>([]);
+
+  const handleMealAdded = (newMealData: MealData[]) => {
+    setMeals(prevMeals => [...prevMeals, ...newMealData]);
+  };
+  
+  const totalNutrients = meals.reduce(
+    (acc, meal) => {
+      acc.calorias += meal.totais.calorias;
+      acc.proteinas += meal.totais.proteinas;
+      return acc;
+    },
+    { calorias: 0, proteinas: 0 }
+  );
+
+  const calorieGoal = 2000;
+  const proteinGoal = 140;
+
+  const calorieProgress = (totalNutrients.calorias / calorieGoal) * 100;
+  const proteinProgress = (totalNutrients.proteinas / proteinGoal) * 100;
+
+
   const summaryCards = [
     {
       title: 'Calorias Hoje',
-      value: '0',
+      value: `${Math.round(totalNutrients.calorias)}`,
       goal: '2000 kcal',
       icon: Flame,
       color: 'bg-green-100 text-green-700',
-      progress: 0,
+      progress: calorieProgress,
     },
     {
       title: 'Proteínas',
-      value: '0g',
+      value: `${totalNutrients.proteinas.toFixed(1)}g`,
       goal: '140g',
       icon: Beef,
       color: 'bg-blue-100 text-blue-700',
-      progress: 0,
+      progress: proteinProgress,
     },
     {
       title: 'Hidratação',
@@ -43,7 +70,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50">
-      <DashboardHeader />
+      <DashboardHeader onMealAdded={handleMealAdded} />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="container mx-auto">
           <div className="mb-6">
@@ -68,6 +95,10 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          <div className="mt-8">
+              <ConsumedFoodsList meals={meals} />
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
