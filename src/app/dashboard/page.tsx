@@ -17,11 +17,6 @@ type UserProfile = {
   email?: string;
 };
 
-/**
- * @fileoverview A página principal do Dashboard.
- * Gerencia o estado de autenticação e os dados do usuário, garantindo que
- * a interface só seja exibida após a sessão ser 100% confirmada.
- */
 export default function DashboardPage() {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,8 +49,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchUserAndData = async (user: User) => {
-      setLoading(true);
-      
       // 1. Fetch user profile from 'profiles' table
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -84,32 +77,33 @@ export default function DashboardPage() {
       setLoading(false);
     };
 
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+         await fetchUserAndData(session.user);
+      } else {
+         setLoading(false);
+      }
+    };
+    
+    checkInitialSession();
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user;
-      if (user) {
+      if (user && user.id !== userProfile?.id) {
+        setLoading(true);
         fetchUserAndData(user);
-      } else {
+      } else if (!user) {
         setUserProfile(null);
         setMeals([]);
         setLoading(false);
       }
     });
 
-    // Initial check
-    (async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-           await fetchUserAndData(session.user);
-        } else {
-           setLoading(false);
-        }
-    })();
-
-
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase, fetchMeals, toast]);
+  }, [supabase, fetchMeals, toast, userProfile?.id]);
 
 
   const handleMealAdded = (newMealData: MealData) => {

@@ -55,13 +55,19 @@ export default function RegisterPage() {
       });
 
       if (error) throw error;
-      if (!data.user) throw new Error('Não foi possível criar o usuário.');
+      if (error || !data.user) {
+        throw new Error(error?.message || 'Não foi possível criar o usuário.');
+      }
+      
+      // O gatilho no Supabase cuidará da criação do perfil.
 
       setSuccess(true);
       toast({
           title: "Registro realizado com sucesso!",
-          description: "Você será redirecionado em instantes...",
+          description: "Você será redirecionado para o dashboard em instantes...",
       });
+      
+      // Aguarda um pouco e força o refresh da página para garantir a nova sessão
       setTimeout(() => {
         router.push('/dashboard');
         router.refresh();

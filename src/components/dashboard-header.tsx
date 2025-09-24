@@ -32,7 +32,7 @@ export default function DashboardHeader({ onMealAdded, user }: DashboardHeaderPr
   };
 
   const userId = user?.id || null;
-  const userName = user?.full_name || user?.email;
+  const userName = user?.full_name || user?.email || 'Usuário';
 
   return (
     <>
