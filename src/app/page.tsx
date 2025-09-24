@@ -107,7 +107,7 @@ export default function Home() {
                 { icon: MessageCircle, title: 'Converse com o Assistente', description: 'Tire dúvidas e receba dicas com nosso chatbot inteligente.' },
                 { icon: TrendingUp, title: 'Acompanhe seu Progresso', description: 'Visualize sua evolução com gráficos e indicadores de saúde.' },
               ].map((step, index) => (
-                <div key={step.title} className="flex items-start gap-6 animate-fade-in" style={{ animationDelay: `${200 * (index + 1)}ms` }}>
+                <div key={step.title} className="flex items-start gap-6 animate-fade-in pt-8" style={{ animationDelay: `${200 * (index + 1)}ms` }}>
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xl">{index + 1}</div>
                   <div>
                     <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
