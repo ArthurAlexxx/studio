@@ -3,7 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { aiPoweredRecipeSearch } from '@/ai/flows/ai-powered-recipe-search';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,7 +37,7 @@ function SubmitButton() {
 }
 
 export default function RecipeSearchForm() {
-  const [state, formAction] = useFormState(aiPoweredRecipeSearch, initialState);
+  const [state, formAction] = useActionState(aiPoweredRecipeSearch, initialState);
   const placeholderRecipeImages = PlaceHolderImages.filter((img) => img.id.startsWith('recipe-'));
 
   return (

@@ -1,7 +1,8 @@
 'use client';
 
 import { personalizedMealRecommendations } from '@/ai/flows/personalized-meal-recommendations';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,7 +33,7 @@ function SubmitButton() {
 }
 
 export default function PersonalizedMealForm() {
-  const [state, formAction] = useFormState(personalizedMealRecommendations, initialState);
+  const [state, formAction] = useActionState(personalizedMealRecommendations, initialState);
 
   return (
     <Card className="w-full max-w-lg shadow-lg">
