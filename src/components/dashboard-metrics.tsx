@@ -49,7 +49,7 @@ export default function DashboardMetrics({ meals, userProfile }: DashboardMetric
   const weeklyCaloriesData = daysOfWeek.map(day => {
     const isToday = isTodayFns(day);
     return {
-      day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1), // Ex: "Seg", "Ter", etc.
+      day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
       calories: isToday ? Math.round(totalNutrients.calorias) : 0, // Mock: No momento só temos dados de hoje
     };
   });

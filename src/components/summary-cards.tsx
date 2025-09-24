@@ -1,23 +1,26 @@
 // src/components/summary-cards.tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Beef, Star } from 'lucide-react';
+import { Flame, Beef, Star, Banana, Wheat } from 'lucide-react';
 
 interface SummaryCardsProps {
   totalNutrients: {
     calorias: number;
     proteinas: number;
+    carboidratos?: number;
+    gorduras?: number;
   };
   calorieGoal: number;
   proteinGoal: number;
-  currentStreak: number;
+  currentStreak?: number;
+  hideStreak?: boolean;
 }
 
 /**
  * @fileoverview Componente que exibe os cards de resumo no dashboard.
  * Mostra métricas principais como calorias, proteínas, e sequência.
  */
-export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal, currentStreak }: SummaryCardsProps) {
+export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal, currentStreak, hideStreak = false }: SummaryCardsProps) {
   const calorieProgress = Math.min((totalNutrients.calorias / calorieGoal) * 100, 100);
   const proteinProgress = Math.min((totalNutrients.proteinas / proteinGoal) * 100, 100);
 
@@ -29,6 +32,7 @@ export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal,
       unit: 'kcal',
       icon: Flame,
       progress: calorieProgress,
+      isVisible: true
     },
     {
       title: 'Proteínas Ingeridas',
@@ -37,19 +41,37 @@ export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal,
       unit: 'g',
       icon: Beef,
       progress: proteinProgress,
+      isVisible: true
     },
-    {
+    ...(!hideStreak ? [{
       title: 'Sequência de Foco',
       value: `${currentStreak}`,
       description: ` ${currentStreak === 1 ? 'dia' : 'dias'} de consistência`,
       icon: Star,
-      footer: currentStreak > 1 ? `Você está pegando o ritmo!` : 'Todo começo é um passo importante!',
-    },
+      footer: currentStreak && currentStreak > 1 ? `Você está pegando o ritmo!` : 'Todo começo é um passo importante!',
+      isVisible: !hideStreak
+    }] : []),
+     ...(hideStreak ? [
+        {
+            title: 'Carboidratos',
+            value: `${(totalNutrients.carboidratos || 0).toFixed(1)}`,
+            description: 'g',
+            icon: Wheat,
+            isVisible: true
+        },
+        {
+            title: 'Gorduras',
+            value: `${(totalNutrients.gorduras || 0).toFixed(1)}`,
+            description: 'g',
+            icon: Banana, // Ícone ilustrativo para gorduras (abacate/oleaginosas)
+            isVisible: true
+        }
+    ] : [])
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {summaryCardsData.map((card, index) => (
+    <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${hideStreak ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+      {summaryCardsData.filter(card => card.isVisible).map((card, index) => (
         <Card key={card.title} className="shadow-sm rounded-2xl animate-fade-in" style={{animationDelay: `${index * 100}ms`}}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
