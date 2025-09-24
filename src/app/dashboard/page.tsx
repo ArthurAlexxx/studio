@@ -19,15 +19,17 @@ import { Loader2 } from 'lucide-react';
 export default function DashboardPage() {
   const [meals, setMeals] = useState<MealData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const supabase = createClient();
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchMeals = async () => {
+    const fetchMealsAndUser = async () => {
       setLoading(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Usuário não autenticado.");
+        setUserId(user.id);
 
         const today = new Date().toISOString().split('T')[0];
         const { data, error } = await supabase
@@ -43,8 +45,8 @@ export default function DashboardPage() {
 
       } catch (error: any) {
         toast({
-          title: "Erro ao carregar refeições",
-          description: error.message || "Não foi possível buscar suas refeições. Tente recarregar a página.",
+          title: "Erro ao carregar dados",
+          description: error.message || "Não foi possível buscar seus dados. Tente recarregar a página.",
           variant: "destructive"
         });
       } finally {
@@ -52,7 +54,7 @@ export default function DashboardPage() {
       }
     };
 
-    fetchMeals();
+    fetchMealsAndUser();
   }, [supabase, toast]);
 
   const handleMealAdded = (newMealData: MealData) => {
@@ -61,7 +63,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50">
-      <DashboardHeader onMealAdded={handleMealAdded} />
+      <DashboardHeader onMealAdded={handleMealAdded} userId={userId} />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="container mx-auto">
           {loading ? (

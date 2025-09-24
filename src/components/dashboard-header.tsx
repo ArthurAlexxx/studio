@@ -10,10 +10,11 @@ import { useState } from 'react';
 import type { MealData } from '@/types/meal';
 
 interface DashboardHeaderProps {
-  onMealAdded: (mealData: MealData[]) => void;
+  onMealAdded: (mealData: MealData) => void;
+  userId: string | null;
 }
 
-export default function DashboardHeader({ onMealAdded }: DashboardHeaderProps) {
+export default function DashboardHeader({ onMealAdded, userId }: DashboardHeaderProps) {
   const router = useRouter();
   const supabase = createClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,7 +56,7 @@ export default function DashboardHeader({ onMealAdded }: DashboardHeaderProps) {
           </div>
         </div>
       </header>
-      <AddMealModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} onMealAdded={onMealAdded} />
+      <AddMealModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} onMealAdded={onMealAdded} userId={userId} />
     </>
   );
 }

@@ -31,9 +31,10 @@ interface AddMealModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onMealAdded: (mealData: MealData) => void;
+  userId: string | null;
 }
 
-export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddMealModalProps) {
+export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId }: AddMealModalProps) {
   const { toast } = useToast();
   const supabase = createClient();
   const form = useForm<AddMealFormValues>({
@@ -52,6 +53,14 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: AddMealFormValues) => {
+    if (!userId) {
+      toast({
+        title: "Erro de Autenticação",
+        description: "Não foi possível identificar o usuário. Por favor, faça login novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
       const requests = data.foods.map(food => {
@@ -100,13 +109,10 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded }: AddM
           totais: { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 }
       });
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado.");
-
       const { error: dbError } = await supabase
         .from('meal_entries')
         .insert([{ 
-            user_id: user.id, 
+            user_id: userId, 
             date: new Date().toISOString().split('T')[0],
             meal_type: data.mealType,
             meal_data: combinedMealData
