@@ -1,7 +1,7 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ChevronLeft, Plus, LogOut, User as UserIcon, Settings } from 'lucide-react';
+import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
@@ -42,18 +42,11 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
     <>
       <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-20 items-center justify-between">
-          <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full md:hidden" asChild>
-                  <Link href="/">
-                      <ChevronLeft className="h-5 w-5" />
-                      <span className="sr-only">Voltar para a página inicial</span>
-                  </Link>
-              </Button>
-              <div className="flex items-center gap-3">
-                  <BarChart3 className="h-7 w-7 text-primary" />
-                  <h1 className="text-xl md:text-2xl font-bold text-foreground">Meu Dashboard</h1>
-              </div>
-          </div>
+          <Link href="/" className="flex items-center gap-3 group">
+              <Leaf className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">NutriSmart</h1>
+          </Link>
+          
           <div className="flex items-center gap-3">
               {user && (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">

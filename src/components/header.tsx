@@ -1,10 +1,13 @@
 'use client';
 
-import { Leaf, Menu } from 'lucide-react';
+import { Leaf, Menu, LogOut, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '@/lib/firebase/client';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link
@@ -16,20 +19,41 @@ const NavLink = ({ href, children }: { href: string; children: React.ReactNode }
 );
 
 export default function Header() {
-  const [isScrolled, setIsScrolled] = React.useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        unsubscribe();
+    }
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
 
   const navLinks = (
     <>
       <NavLink href="/#features">Funcionalidades</NavLink>
-      <NavLink href="/dashboard">Dashboard</NavLink>
+      {user && <NavLink href="/dashboard">Dashboard</NavLink>}
     </>
   );
 
@@ -44,12 +68,31 @@ export default function Header() {
           {navLinks}
         </nav>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className='hidden md:inline-flex' asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/dashboard">Meu Dashboard</Link>
-          </Button>
+          {!loading && (
+            <>
+              {user ? (
+                <>
+                   <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:inline-flex">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sair
+                   </Button>
+                   <Button asChild>
+                     <Link href="/dashboard">Meu Dashboard</Link>
+                   </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" className='hidden md:inline-flex' asChild>
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button asChild>
+                     <Link href="/register">Começar Agora</Link>
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
@@ -61,9 +104,15 @@ export default function Header() {
               <SheetContent side="right">
                 <nav className="mt-8 grid gap-6 text-lg">
                   {navLinks}
-                   <Button variant="ghost" asChild>
-                      <Link href="/login">Login</Link>
-                   </Button>
+                  {!user ? (
+                     <Button variant="ghost" asChild>
+                        <Link href="/login">Login</Link>
+                     </Button>
+                  ) : (
+                     <Button variant="ghost" onClick={handleSignOut}>
+                        Sair
+                     </Button>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
