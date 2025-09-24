@@ -1,7 +1,8 @@
 // src/components/dashboard-header.tsx
 'use client';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
@@ -47,21 +48,32 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
               <h1 className="text-xl md:text-2xl font-bold text-foreground">NutriSmart</h1>
           </Link>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
               {user && (
-                <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <UserIcon className="h-5 w-5 text-primary" />
-                    <span>Olá, {userName}!</span>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
+                        <UserIcon className="h-5 w-5 text-primary" />
+                        <span>Olá, {userName}!</span>
+                        <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Definir Metas</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sair</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
-            <Button variant="ghost" size="icon" onClick={() => setSettingsModalOpen(true)} disabled={!userId} title="Definir Metas">
-              <Settings className="h-5 w-5" />
-              <span className="sr-only">Definir Metas</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
+            
             <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Refeição

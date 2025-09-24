@@ -1,9 +1,10 @@
 'use client';
 
-import { Leaf, Menu, LogOut, User as UserIcon } from 'lucide-react';
+import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import React, { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase/client';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
@@ -73,21 +74,29 @@ export default function Header() {
           {!loading && (
             <>
               {user ? (
-                <>
-                   {user && (
-                    <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                        <UserIcon className="h-5 w-5 text-primary" />
-                        <span>Olá, {userName}!</span>
-                    </div>
-                  )}
-                   <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:inline-flex">
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
+                          <UserIcon className="h-5 w-5 text-primary" />
+                          <span>Olá, {userName}!</span>
+                          <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                        Meu Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
                         <LogOut className="mr-2 h-4 w-4" />
-                        Sair
-                   </Button>
-                   <Button asChild>
-                     <Link href="/dashboard">Meu Dashboard</Link>
-                   </Button>
-                </>
+                        <span>Sair</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ) : (
                 <>
                   <Button variant="ghost" className='hidden md:inline-flex' asChild>
