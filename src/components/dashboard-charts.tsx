@@ -1,17 +1,8 @@
 'use client';
 
-import { Bar, BarChart, CartesianGrid, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
-import { type ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-
-const weeklyCaloriesData = [
-  { day: 'Seg', calories: 0 },
-  { day: 'Ter', calories: 0 },
-  { day: 'Qua', calories: 0 },
-  { day: 'Qui', calories: 0 },
-  { day: 'Sex', calories: 0 },
-  { day: 'Sáb', calories: 0 },
-  { day: 'Dom', calories: 0 },
-];
+import * as React from 'react';
+import { Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
+import { type ChartConfig, ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 const caloriesChartConfig = {
   calories: {
@@ -19,12 +10,6 @@ const caloriesChartConfig = {
     color: 'hsl(var(--chart-1))',
   },
 } satisfies ChartConfig;
-
-const macrosData = [
-  { name: 'Proteínas', value: 40, fill: 'hsl(var(--chart-1))' },
-  { name: 'Carboidratos', value: 40, fill: 'hsl(var(--chart-2))' },
-  { name: 'Gorduras', value: 20, fill: 'hsl(var(--chart-3))' },
-];
 
 const macrosChartConfig = {
   value: {
@@ -44,20 +29,23 @@ const macrosChartConfig = {
   },
 } satisfies ChartConfig;
 
-export function DashboardCharts({ chartType }: { chartType: 'calories' | 'macros' }) {
+interface DashboardChartsProps {
+    chartType: 'calories' | 'macros';
+    data: any[];
+}
+
+export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
   if (chartType === 'calories') {
     return (
       <ChartContainer config={caloriesChartConfig} className="min-h-[200px] w-full">
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={weeklyCaloriesData} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
+          <BarChart data={data} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3"/>
             <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} stroke="#888888" />
             <YAxis tickLine={false} axisLine={false} tickMargin={10} stroke="#888888" />
-            <Tooltip
-                contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc' }}
-                labelStyle={{ color: 'black' }}
-                itemStyle={{ color: 'black' }}
-                cursor={{fill: 'rgba(206, 206, 206, 0.2)'}}
+            <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
             />
             <Bar dataKey="calories" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]}>
               <LabelList dataKey="calories" position="top" offset={8} className="fill-foreground" fontSize={12} />
@@ -69,13 +57,23 @@ export function DashboardCharts({ chartType }: { chartType: 'calories' | 'macros
   }
 
   if (chartType === 'macros') {
+     const totalValue = React.useMemo(() => {
+      return data.reduce((acc, curr) => acc + curr.value, 0);
+    }, [data]);
+    
     return (
-      <ChartContainer config={macrosChartConfig} className="mx-auto aspect-square max-h-[300px]">
+      <ChartContainer
+        config={macrosChartConfig}
+        className="mx-auto aspect-square max-h-[300px]"
+      >
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
-            <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel />}
+            />
             <Pie
-              data={macrosData}
+              data={data}
               dataKey="value"
               nameKey="name"
               cx="50%"
@@ -85,15 +83,43 @@ export function DashboardCharts({ chartType }: { chartType: 'calories' | 'macros
               strokeWidth={2}
               paddingAngle={5}
             >
-               {macrosData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+               {data.map((entry) => (
+                <Cell key={`cell-${entry.name}`} fill={entry.fill} />
               ))}
-              <LabelList
-                dataKey="name"
-                className="fill-foreground text-sm font-medium"
-                stroke="none"
+               <Label
+                content={({ viewBox }) => {
+                  if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                    return (
+                      <text
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        <tspan
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          className="fill-foreground text-3xl font-bold"
+                        >
+                          {totalValue.toFixed(1)}g
+                        </tspan>
+                        <tspan
+                          x={viewBox.cx}
+                          y={(viewBox.cy || 0) + 24}
+                          className="fill-muted-foreground"
+                        >
+                          Total
+                        </tspan>
+                      </text>
+                    )
+                  }
+                }}
               />
             </Pie>
+             <ChartLegend
+                content={<ChartLegendContent nameKey="name" />}
+                className="-mt-4"
+             />
           </PieChart>
         </ResponsiveContainer>
       </ChartContainer>

@@ -21,9 +21,11 @@ export default function DashboardPage() {
     (acc, meal) => {
       acc.calorias += meal.totais.calorias;
       acc.proteinas += meal.totais.proteinas;
+      acc.carboidratos += meal.totais.carboidratos;
+      acc.gorduras += meal.totais.gorduras;
       return acc;
     },
-    { calorias: 0, proteinas: 0 }
+    { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
   );
 
   const calorieGoal = 2000;
@@ -32,6 +34,21 @@ export default function DashboardPage() {
   const calorieProgress = (totalNutrients.calorias / calorieGoal) * 100;
   const proteinProgress = (totalNutrients.proteinas / proteinGoal) * 100;
 
+  const macrosData = [
+    { name: 'Proteínas', value: totalNutrients.proteinas, fill: 'hsl(var(--chart-1))' },
+    { name: 'Carboidratos', value: totalNutrients.carboidratos, fill: 'hsl(var(--chart-2))' },
+    { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-3))' },
+  ];
+
+  const weeklyCaloriesData = [
+    { day: 'Seg', calories: 0 },
+    { day: 'Ter', calories: 0 },
+    { day: 'Qua', calories: 0 },
+    { day: 'Qui', calories: 0 },
+    { day: 'Sex', calories: 0 },
+    { day: 'Sáb', calories: 0 },
+    { day: 'Dom', calories: Math.round(totalNutrients.calorias) },
+  ];
 
   const summaryCards = [
     {
@@ -111,7 +128,7 @@ export default function DashboardPage() {
                 <CardDescription>Proporção dos macronutrientes consumidos hoje</CardDescription>
               </CardHeader>
               <CardContent>
-                 <DashboardCharts chartType="macros" />
+                 <DashboardCharts chartType="macros" data={macrosData} />
               </CardContent>
             </Card>
             <Card className="lg:col-span-2">
@@ -123,7 +140,7 @@ export default function DashboardPage() {
                  <CardDescription>Consumo de calorias nos últimos 7 dias</CardDescription>
               </CardHeader>
               <CardContent>
-                 <DashboardCharts chartType="calories" />
+                 <DashboardCharts chartType="calories" data={weeklyCaloriesData} />
               </CardContent>
             </Card>
           </div>
