@@ -2,6 +2,8 @@
 import type { MealData } from '@/types/meal';
 import SummaryCards from './summary-cards';
 import ChartsSection from './charts-section';
+import { eachDayOfInterval, startOfWeek, endOfWeek, format, getDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface DashboardMetricsProps {
   meals: MealData[];
@@ -36,15 +38,20 @@ export default function DashboardMetrics({ meals }: DashboardMetricsProps) {
     { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-3))' },
   ];
 
-  const weeklyCaloriesData = [
-    { day: 'Seg', calories: 0 },
-    { day: 'Ter', calories: 0 },
-    { day: 'Qua', calories: 0 },
-    { day: 'Qui', calories: 0 },
-    { day: 'Sex', calories: 0 },
-    { day: 'Sáb', calories: 0 },
-    { day: 'Dom', calories: Math.round(totalNutrients.calorias) }, // Atualiza o dia atual
-  ];
+  // Gera os dados para o gráfico de evolução semanal usando date-fns.
+  const today = new Date();
+  const weekStart = startOfWeek(today, { locale: ptBR });
+  const weekEnd = endOfWeek(today, { locale: ptBR });
+  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const weeklyCaloriesData = daysOfWeek.map(day => {
+    const isToday = format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+    return {
+      day: format(day, 'E', { locale: ptBR }), // Ex: "Seg", "Ter", etc.
+      calories: isToday ? Math.round(totalNutrients.calorias) : 0,
+    };
+  });
+
 
   return (
     <>
