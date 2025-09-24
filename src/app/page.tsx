@@ -160,7 +160,7 @@ export default function Home() {
                 </p>
                 <div className="relative mx-auto max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl group animate-fade-in">
                     {videoPlaceholderImage && (
-                        <Image src={videoPlaceholderImage.imageUrl} alt="Demonstração do NutriSmart" layout="fill" objectFit="cover" data-ai-hint={videoPlaceholderImage.imageHint} />
+                        <Image src={videoPlaceholderImage.imageUrl} alt="Demonstração do NutriSmart" fill objectFit="cover" data-ai-hint={videoPlaceholderImage.imageHint} />
                     )}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <button className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/80 backdrop-blur-sm transition-all group-hover:bg-primary group-hover:scale-110">
