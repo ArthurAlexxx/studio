@@ -29,8 +29,7 @@ export default function Header() {
   const navLinks = (
     <>
       <NavLink href="/#features">Funcionalidades</NavLink>
-      <NavLink href="/#recipe-search">Receitas</NavLink>
-      <NavLink href="/#meal-planner">Planejador</NavLink>
+      <NavLink href="/dashboard">Dashboard</NavLink>
     </>
   );
 

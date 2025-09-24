@@ -2,8 +2,6 @@ import Image from 'next/image';
 import { Leaf, UtensilsCrossed, BarChart, ArrowRight } from 'lucide-react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import RecipeSearchForm from '@/components/recipe-search-form';
-import PersonalizedMealForm from '@/components/personalized-meal-form';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function Home() {
@@ -24,7 +22,7 @@ export default function Home() {
                   O NutriSmart é seu assistente pessoal para uma vida mais saudável. Crie planos alimentares, descubra receitas e monitore seu progresso com o poder da inteligência artificial.
                 </p>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                   <a href="#recipe-search" className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                   <a href="/dashboard" className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
                       Começar Agora
                       <ArrowRight className="ml-2 h-5 w-5" />
                    </a>
@@ -80,30 +78,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
-
-        <section id="recipe-search" className="py-24">
-          <div className="container flex flex-col items-center gap-12 px-4 md:px-6">
-            <div className="max-w-3xl text-center">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Encontre a Receita Perfeita</h2>
-                <p className="mx-auto mt-4 text-muted-foreground md:text-lg">
-                    Não sabe o que cozinhar? Diga ao nosso Chef Virtual quais ingredientes você tem e quais são suas preferências.
-                </p>
-            </div>
-            <RecipeSearchForm />
-          </div>
-        </section>
-
-        <section id="meal-planner" className="bg-secondary/50 py-24">
-            <div className="container flex flex-col items-center gap-12 px-4 md:px-6">
-                <div className="max-w-3xl text-center">
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Seu Nutricionista Pessoal com IA</h2>
-                    <p className="mx-auto mt-4 text-muted-foreground md:text-lg">
-                        Receba recomendações de refeições que se alinham perfeitamente com suas metas de saúde e dieta.
-                    </p>
-                </div>
-                <PersonalizedMealForm />
-            </div>
         </section>
       </main>
       <Footer />

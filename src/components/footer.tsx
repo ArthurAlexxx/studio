@@ -1,6 +1,5 @@
 import { Leaf } from 'lucide-react';
 import Link from 'next/link';
-import { ContactForm } from './contact-form';
 
 export default function Footer() {
   return (
@@ -21,8 +20,7 @@ export default function Footer() {
               <h3 className="mb-4 font-semibold">Produto</h3>
               <ul className="space-y-2">
                 <li><Link href="#features" className="text-muted-foreground hover:text-primary">Funcionalidades</Link></li>
-                <li><Link href="#recipe-search" className="text-muted-foreground hover:text-primary">Busca de Receitas</Link></li>
-                <li><Link href="#meal-planner" className="text-muted-foreground hover:text-primary">Planejador de Refeições</Link></li>
+                <li><Link href="/dashboard" className="text-muted-foreground hover:text-primary">Dashboard</Link></li>
               </ul>
             </div>
             <div>
@@ -37,7 +35,7 @@ export default function Footer() {
           </div>
            <div>
               <h3 className="mb-4 font-semibold">Fale Conosco</h3>
-              <ContactForm />
+              <p className="text-sm text-muted-foreground">contato@nutrismart.com</p>
            </div>
         </div>
         <div className="mt-8 border-t pt-8 text-center">
