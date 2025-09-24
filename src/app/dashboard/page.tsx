@@ -28,7 +28,11 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Usuário não autenticado.");
+        if (!user) {
+          // A sessão pode não estar pronta imediatamente. 
+          // O listener abaixo vai lidar com a mudança de estado.
+          return;
+        };
         setUserId(user.id);
 
         const today = new Date().toISOString().split('T')[0];
@@ -54,7 +58,26 @@ export default function DashboardPage() {
       }
     };
 
+    // Chame a função uma vez para a carga inicial
     fetchMealsAndUser();
+
+    // Adicione um listener para mudanças no estado de autenticação
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+         if(session?.user.id !== userId) {
+            fetchMealsAndUser();
+         }
+       } else if (event === 'SIGNED_OUT') {
+         setMeals([]);
+         setUserId(null);
+       }
+    });
+
+    // Remova o listener quando o componente for desmontado
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+
   }, [supabase, toast]);
 
   const handleMealAdded = (newMealData: MealData) => {
