@@ -11,10 +11,10 @@ import { Badge } from '@/components/ui/badge';
 export default function Home() {
   const videoPlaceholderImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
   const heroImage = PlaceHolderImages.find((img) => img.id === 'feature-1');
-  const howItWorksImage = PlaceHolderImages.find((img) => img.id === 'feature-1');
+  const howItWorksImage = PlaceHolderImages.find((img) => img.id === 'feature-3');
   
   return (
-    <div className="flex min-h-dvh flex-col bg-muted/20">
+    <div className="flex min-h-dvh flex-col bg-background">
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
