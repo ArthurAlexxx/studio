@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import { Leaf, UtensilsCrossed, BarChart, ArrowRight, UserCheck, Sparkles, MessageCircle, TrendingUp, Dumbbell, Vegan, HeartPulse, Goal, Play, Star } from 'lucide-react';
 import Header from '@/components/header';
