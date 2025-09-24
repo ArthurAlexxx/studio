@@ -49,6 +49,8 @@ export default function Header() {
       console.error("Error signing out: ", error);
     }
   };
+  
+  const userName = user?.displayName?.split(' ')[0] || 'Usuário';
 
   const navLinks = (
     <>
@@ -72,6 +74,12 @@ export default function Header() {
             <>
               {user ? (
                 <>
+                   {user && (
+                    <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <UserIcon className="h-5 w-5 text-primary" />
+                        <span>Olá, {userName}!</span>
+                    </div>
+                  )}
                    <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden md:inline-flex">
                         <LogOut className="mr-2 h-4 w-4" />
                         Sair
