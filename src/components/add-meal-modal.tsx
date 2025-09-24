@@ -267,7 +267,7 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || !userId}>
                  {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (

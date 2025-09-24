@@ -25,11 +25,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchAndSetData = async (currentUserId: string) => {
-      if (!currentUserId) {
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
         const today = new Date().toISOString().split('T')[0];
@@ -58,14 +53,9 @@ export default function DashboardPage() {
       const currentUserId = session?.user?.id ?? null;
       setUserId(currentUserId);
 
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if(currentUserId) {
-          fetchAndSetData(currentUserId);
-        } else {
-          // Se não há usuário na sessão inicial, paramos o carregamento
-          setLoading(false);
-        }
-      } else if (event === 'SIGNED_OUT') {
+      if (currentUserId) {
+        fetchAndSetData(currentUserId);
+      } else {
         setMeals([]);
         setLoading(false);
       }
