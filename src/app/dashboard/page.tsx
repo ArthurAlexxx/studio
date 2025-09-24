@@ -68,35 +68,45 @@ export default function DashboardPage() {
         setUser(userData);
         await fetchMeals(currentUser.id);
       }
-      // A transição de loading para false ocorre após a primeira verificação
-      // ou quando o auth listener confirma a sessão.
       setLoading(false); 
     };
 
     fetchUserAndData();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setLoading(true); // Ativa o loading durante mudanças de estado
-      if (session) {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setLoading(true);
+      if (event === 'SIGNED_IN' && session) {
         const currentUser = session.user;
-         const { data: profile } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('user_id', currentUser.id)
-          .single();
-
-        const userData: UserProfile = {
-          ...currentUser,
-          full_name: profile?.name || currentUser.email || 'Usuário'
-        };
-
-        setUser(userData);
-        await fetchMeals(currentUser.id);
-      } else {
+        supabase.from('profiles').select('name').eq('user_id', currentUser.id).single()
+          .then(({ data: profile }) => {
+            const userData: UserProfile = {
+              ...currentUser,
+              full_name: profile?.name || currentUser.email || 'Usuário'
+            };
+            setUser(userData);
+            return fetchMeals(currentUser.id);
+          })
+          .finally(() => setLoading(false));
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setMeals([]);
+        setLoading(false);
+      } else if (event === 'INITIAL_SESSION' && session) {
+        // Handle case where session is already available on load
+         const currentUser = session.user;
+        supabase.from('profiles').select('name').eq('user_id', currentUser.id).single()
+          .then(({ data: profile }) => {
+            const userData: UserProfile = {
+              ...currentUser,
+              full_name: profile?.name || currentUser.email || 'Usuário'
+            };
+            setUser(userData);
+            return fetchMeals(currentUser.id);
+          })
+          .finally(() => setLoading(false));
+      } else if (!session) {
+         setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
