@@ -160,6 +160,7 @@ export default function HistoryPage() {
                     <ConsumedFoodsList 
                         mealEntries={mealEntries} 
                         onMealDeleted={handleMealDeleted}
+                        showTotals={false}
                     />
                 </>
               )}

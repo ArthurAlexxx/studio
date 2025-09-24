@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ConsumedFoodsListProps {
   mealEntries: MealEntry[];
   onMealDeleted: (entryId: string) => void;
+  showTotals?: boolean;
 }
 
 const NutrientItem = ({ value, label, colorClass }: { value: string; label: string; colorClass?: string }) => (
@@ -21,7 +22,7 @@ const NutrientItem = ({ value, label, colorClass }: { value: string; label: stri
   </div>
 );
 
-export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: ConsumedFoodsListProps) {
+export default function ConsumedFoodsList({ mealEntries, onMealDeleted, showTotals = true }: ConsumedFoodsListProps) {
     const { toast } = useToast();
 
     const handleLocalMealDeleted = async (entryId: string) => {
@@ -137,7 +138,7 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted }: Consum
           </div>
         ))}
       </CardContent>
-       {totalNutrients.calorias > 0 && (
+       {showTotals && totalNutrients.calorias > 0 && (
           <CardFooter className="flex-col items-start bg-secondary/50 p-6 rounded-b-2xl">
             <p className="font-semibold text-lg">Totais do Dia</p>
             <Separator className="my-3"/>
