@@ -28,10 +28,10 @@ export default function Header() {
 
   const navLinks = (
     <>
-      <NavLink href="#features">Funcionalidades</NavLink>
-      <NavLink href="#how-it-works">Como Funciona</NavLink>
-      <NavLink href="#pricing">Planos</NavLink>
-      <NavLink href="#testimonials">Depoimentos</NavLink>
+      <NavLink href="/#features">Funcionalidades</NavLink>
+      <NavLink href="/#how-it-works">Como Funciona</NavLink>
+      <NavLink href="/#pricing">Planos</NavLink>
+      <NavLink href="/#testimonials">Depoimentos</NavLink>
     </>
   );
 
@@ -46,8 +46,12 @@ export default function Header() {
           {navLinks}
         </nav>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className='hidden md:inline-flex'>Login</Button>
-          <Button>Começar Agora</Button>
+          <Button variant="ghost" className='hidden md:inline-flex' asChild>
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register">Começar Agora</Link>
+          </Button>
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
@@ -59,7 +63,9 @@ export default function Header() {
               <SheetContent side="right">
                 <nav className="mt-8 grid gap-6 text-lg">
                   {navLinks}
-                   <Button variant="ghost">Login</Button>
+                   <Button variant="ghost" asChild>
+                      <Link href="/login">Login</Link>
+                   </Button>
                 </nav>
               </SheetContent>
             </Sheet>
