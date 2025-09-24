@@ -4,7 +4,7 @@
 import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown, BarChart3, History } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import React, { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase/client';
@@ -127,6 +127,7 @@ export default function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
+                <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
                 <nav className="mt-8 grid gap-6">
                   {navLinks}
                   <Separator className='my-2' />
