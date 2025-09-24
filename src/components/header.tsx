@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase/client';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { ThemeToggle } from './theme-toggle';
 
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link
@@ -71,7 +72,7 @@ export default function Header() {
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks}
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {!loading && (
             <>
               {user ? (
@@ -115,6 +116,8 @@ export default function Header() {
               )}
             </>
           )}
+
+          <ThemeToggle />
 
           <div className="md:hidden">
             <Sheet>

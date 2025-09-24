@@ -13,6 +13,7 @@ import { signOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { type UserProfile } from '@/types/user';
 import SettingsModal from './settings-modal';
+import { ThemeToggle } from './theme-toggle';
 
 interface DashboardHeaderProps {
   onMealAdded: (mealData: MealData) => void;
@@ -48,7 +49,7 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
               <h1 className="text-xl md:text-2xl font-bold text-foreground">NutriSmart</h1>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
               {user && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -86,6 +87,7 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Refeição
             </Button>
+            <ThemeToggle />
           </div>
         </div>
       </header>
