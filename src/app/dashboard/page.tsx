@@ -17,6 +17,8 @@ import AppLayout from '@/components/app-layout';
 export default function DashboardPage() {
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [areMealsLoaded, setAreMealsLoaded] = useState(false);
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const { toast } = useToast();
@@ -67,10 +69,9 @@ export default function DashboardPage() {
             if (doc.exists()) {
                 setUserProfile(doc.data() as UserProfile);
             } else {
-                // Se o perfil não existe, podemos redirecionar ou criar um.
-                // Por enquanto, apenas definimos como nulo.
                 setUserProfile(null);
             }
+             if (!isProfileLoaded) setIsProfileLoaded(true);
         }, (error) => {
             console.error("Error fetching user profile:", error);
             toast({
@@ -78,6 +79,7 @@ export default function DashboardPage() {
                 description: "Não foi possível buscar seu perfil em tempo real.",
                 variant: "destructive"
             });
+             if (!isProfileLoaded) setIsProfileLoaded(true);
         });
 
         // --- Setup Real-time Listener for Meals ---
@@ -94,7 +96,7 @@ export default function DashboardPage() {
                 ...(doc.data() as Omit<MealEntry, 'id'>)
             }));
             setMealEntries(loadedEntries);
-            if(loading) setLoading(false);
+            if(!areMealsLoaded) setAreMealsLoaded(true);
         }, (error) => {
             console.error("Error fetching meals in real-time:", error);
             toast({
@@ -102,7 +104,7 @@ export default function DashboardPage() {
               description: "Não foi possível buscar suas refeições em tempo real.",
               variant: "destructive"
             });
-             if(loading) setLoading(false);
+            if(!areMealsLoaded) setAreMealsLoaded(true);
         });
         
         return () => {
@@ -119,9 +121,15 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeAuth();
-  }, [router, toast, loading]);
+  }, [router, toast, isProfileLoaded, areMealsLoaded]);
+
+  useEffect(() => {
+    if (isProfileLoaded && areMealsLoaded) {
+      setLoading(false);
+    }
+  }, [isProfileLoaded, areMealsLoaded]);
   
-  const initialLoading = loading && (!user || !userProfile);
+  const initialLoading = loading || !user || !userProfile;
 
   if (initialLoading) {
     return (
