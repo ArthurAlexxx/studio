@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, HeartPulse } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
+import { stravaSync } from '@/ai/flows/strava-sync-flow';
 
 export default function StravaPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -53,11 +54,10 @@ export default function StravaPage() {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/e70734fa-c464-4ea5-828b-d1b68da30a41';
-      const response = await fetch(webhookUrl, { method: 'POST' });
-
-      if (!response.ok) {
-        throw new Error('A resposta da sincronização não foi bem-sucedida.');
+      const result = await stravaSync();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'A resposta da sincronização não foi bem-sucedida.');
       }
 
       toast({
