@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -60,11 +60,14 @@ export default function HydrationPage() {
         const q = query(
             collection(db, 'hydration_entries'),
             where("userId", "==", uid),
-            orderBy("date", "desc"),
             limit(30)
         );
         const querySnapshot = await getDocs(q);
         const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+        
+        // Sort history on the client-side
+        history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
         setHydrationHistory(history);
     } catch (error: any) {
         console.error("Error fetching hydration history:", error);
@@ -100,12 +103,15 @@ export default function HydrationPage() {
                 // Update history with today's data in real-time
                 setHydrationHistory(prev => {
                     const index = prev.findIndex(item => item.id === data.id);
+                    let newHistory;
                     if (index > -1) {
-                        const newHistory = [...prev];
+                        newHistory = [...prev];
                         newHistory[index] = data;
-                        return newHistory;
+                    } else {
+                        newHistory = [data, ...prev];
                     }
-                    return [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    newHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    return newHistory;
                 });
             } else {
                  const goal = userProfile?.waterGoal || 2000;
@@ -141,9 +147,13 @@ export default function HydrationPage() {
   }, [router, fetchHistory, userProfile?.waterGoal]);
   
   const summaryStats = useMemo(() => {
-    const last7DaysHistory = hydrationHistory.filter(entry => 
-        isSameDay(parseISO(entry.date), new Date()) || parseISO(entry.date) >= subDays(new Date(), 6)
-    );
+    const last7DaysHistory = hydrationHistory.filter(entry => {
+        const entryDate = parseISO(entry.date);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const sevenDaysAgo = subDays(today, 6);
+        return entryDate >= sevenDaysAgo && entryDate <= today;
+    });
 
     const totalIntake = last7DaysHistory.reduce((acc, entry) => acc + entry.intake, 0);
     const averageIntake = last7DaysHistory.length > 0 ? totalIntake / last7DaysHistory.length : 0;
