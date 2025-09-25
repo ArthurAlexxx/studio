@@ -6,14 +6,13 @@ import { BarChart3, GlassWater } from 'lucide-react';
 interface ChartsSectionProps {
   macrosData: any[];
   weeklyCaloriesData: any[];
-  weeklyHydrationData: any[];
 }
 
 /**
  * @fileoverview Componente que exibe a seção de gráficos no dashboard.
  * Contém o gráfico de distribuição de macronutrientes e o de evolução semanal.
  */
-export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHydrationData }: ChartsSectionProps) {
+export default function ChartsSection({ macrosData, weeklyCaloriesData }: ChartsSectionProps) {
   return (
     <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-1 shadow-sm rounded-2xl">
@@ -38,18 +37,6 @@ export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHy
         </CardHeader>
         <CardContent>
           <DashboardCharts chartType="calories" data={weeklyCaloriesData} />
-        </CardContent>
-      </Card>
-      <Card className="lg:col-span-3 shadow-sm rounded-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-semibold text-lg">
-            <GlassWater className="h-5 w-5 text-primary" />
-            Evolução da Hidratação
-          </CardTitle>
-          <CardDescription>Consumo de água (ml) nos últimos 7 dias.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DashboardCharts chartType="hydration" data={weeklyHydrationData} />
         </CardContent>
       </Card>
     </div>

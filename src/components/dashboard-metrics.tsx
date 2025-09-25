@@ -56,15 +56,6 @@ export default function DashboardMetrics({ meals, userProfile, hydrationHistory 
     };
   });
   
-  const weeklyHydrationData = daysOfWeek.map(day => {
-    const entry = hydrationHistory.find(h => isSameDay(parseISO(h.date), day));
-    return {
-      day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
-      intake: entry ? entry.intake : 0,
-      goal: entry ? entry.goal : userProfile?.waterGoal || 2000
-    };
-  });
-
   return (
     <>
       <div className="mb-6 animate-fade-in">
@@ -84,7 +75,6 @@ export default function DashboardMetrics({ meals, userProfile, hydrationHistory 
       <ChartsSection
         macrosData={macrosData}
         weeklyCaloriesData={weeklyCaloriesData}
-        weeklyHydrationData={weeklyHydrationData}
       />
     </>
   );

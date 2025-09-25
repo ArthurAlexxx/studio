@@ -135,6 +135,17 @@ export default function DashboardPage() {
             if (docSnap.exists()) {
                 const data = { id: docSnap.id, ...docSnap.data() } as HydrationEntry;
                 setTodayHydration(data);
+                 // Also update history to reflect today's changes
+                setHydrationHistory(prevHistory => {
+                    const existingIndex = prevHistory.findIndex(h => h.id === data.id);
+                    if (existingIndex > -1) {
+                        const newHistory = [...prevHistory];
+                        newHistory[existingIndex] = data;
+                        return newHistory;
+                    }
+                    return [...prevHistory, data].sort((a, b) => b.date.localeCompare(a.date));
+                });
+
             } else {
                 // Use a local variable for profile to avoid stale state
                 const currentGoal = userProfile?.waterGoal || 2000;
@@ -145,7 +156,9 @@ export default function DashboardPage() {
                     goal: currentGoal,
                 };
                 setDoc(todayDocRef, newEntry).then(() => {
-                    setTodayHydration({ id: todayDocId, ...newEntry });
+                    const newHydrationEntry = { id: todayDocId, ...newEntry };
+                    setTodayHydration(newHydrationEntry);
+                     setHydrationHistory(prev => [...prev, newHydrationEntry].sort((a, b) => b.date.localeCompare(a.date)));
                 });
             }
             if (!isHydrationLoaded) setIsHydrationLoaded(true);
@@ -154,27 +167,10 @@ export default function DashboardPage() {
             if (!isHydrationLoaded) setIsHydrationLoaded(true);
         });
         
-        // Fetch weekly hydration history
-        const weekAgoDate = getLocalDateString(subDays(new Date(), 6));
-        const weeklyHydrationQuery = query(
-            collection(db, 'hydration_entries'),
-            where("userId", "==", currentUser.uid),
-            where("date", ">=", weekAgoDate)
-        );
-        const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (querySnapshot) => {
-            const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-            // Sort on the client
-            history.sort((a, b) => b.date.localeCompare(a.date));
-            setHydrationHistory(history);
-        }, (error) => {
-            console.error("Error fetching weekly hydration:", error);
-        });
-        
         return () => {
             unsubscribeProfile();
             unsubscribeMeals();
             unsubscribeTodayHydration();
-            unsubscribeWeeklyHydration();
         };
 
       } else {
