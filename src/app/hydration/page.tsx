@@ -63,17 +63,22 @@ export default function HydrationPage() {
   }, [user, userProfile, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
+    // Simplificando a query para evitar a necessidade de um índice composto
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      orderBy('date', 'desc'),
-      limit(7)
+      limit(30) // Busca um pouco mais para garantir que temos os 7 dias, mesmo com dias faltando
     );
 
     try {
       const querySnapshot = await getDocs(q);
       const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
-      setHydrationHistory(history);
+      
+      // Ordenando os dados no lado do cliente
+      history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setHydrationHistory(history.slice(0, 7)); // Pegando os 7 mais recentes
+
     } catch(e) {
       console.error(e);
       toast({
