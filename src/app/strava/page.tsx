@@ -10,15 +10,18 @@ import { auth, db } from '@/lib/firebase/client';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, HeartPulse } from 'lucide-react';
+import { Loader2, HeartPulse, Zap } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import { stravaSync } from '@/ai/flows/strava-sync-flow';
+import type { StravaActivity } from '@/types/strava';
+import StravaActivityCard from '@/components/strava-activity-card';
 
 export default function StravaPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [activities, setActivities] = useState<StravaActivity[]>([]);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -53,17 +56,22 @@ export default function StravaPage() {
 
   const handleSync = async () => {
     setSyncing(true);
+    setActivities([]);
     try {
       const result = await stravaSync();
       
-      if (!result.success) {
-        throw new Error(result.message || 'A resposta da sincronização não foi bem-sucedida.');
+      if (!result || result.length === 0) {
+        toast({
+          title: 'Nenhuma atividade encontrada',
+          description: 'A sincronização não retornou nenhuma atividade nova.',
+        });
+      } else {
+        setActivities(result);
+        toast({
+          title: 'Sincronização Concluída! ✅',
+          description: `${result.length} atividades foram importadas com sucesso.`,
+        });
       }
-
-      toast({
-        title: 'Sincronização Iniciada! ✅',
-        description: 'Suas atividades do Strava serão importadas em breve.',
-      });
 
     } catch (error: any) {
       console.error("Strava sync error:", error);
@@ -94,32 +102,53 @@ export default function StravaPage() {
         onProfileUpdate={handleProfileUpdate}
     >
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-foreground">Sincronizar com Strava</h1>
-          <p className="text-muted-foreground">Conecte sua conta do Strava para importar suas atividades físicas e obter uma visão completa do seu balanço calórico.</p>
-        </div>
-
-        <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in" style={{animationDelay: '150ms'}}>
-          <CardHeader className="text-center">
-            <HeartPulse className="h-12 w-12 text-primary mx-auto mb-4" />
-            <CardTitle className="text-2xl">Importar Atividades</CardTitle>
-            <CardDescription>
-              Clique no botão abaixo para buscar suas atividades recentes do Strava. As calorias gastas em seus treinos serão contabilizadas em seu resumo diário.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md">
+        <div className="flex flex-col sm:flex-row justify-between items-start mb-8 animate-fade-in">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Atividades do Strava</h1>
+            <p className="text-muted-foreground max-w-2xl mt-2">Conecte sua conta do Strava para importar suas atividades físicas e obter uma visão completa do seu balanço calórico.</p>
+          </div>
+          <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md mt-4 sm:mt-0 shrink-0">
               {syncing ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Sincronizando...
                 </>
               ) : (
-                'Sincronizar com Strava'
+                <>
+                  <Zap className="mr-2 h-5 w-5" />
+                  Sincronizar Atividades
+                </>
               )}
             </Button>
-          </CardContent>
-        </Card>
+        </div>
+
+        {syncing && (
+           <div className="flex min-h-[400px] w-full flex-col bg-muted/20 items-center justify-center rounded-2xl">
+              <Loader2 className="h-16 w-16 animate-spin text-primary" />
+              <p className="mt-4 text-muted-foreground">Buscando suas atividades no Strava...</p>
+          </div>
+        )}
+
+        {!syncing && activities.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+            {activities.map(activity => (
+              <StravaActivityCard key={activity.id} activity={activity} />
+            ))}
+          </div>
+        )}
+        
+        {!syncing && activities.length === 0 && (
+          <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in mt-12" style={{animationDelay: '150ms'}}>
+            <CardHeader className="text-center">
+              <HeartPulse className="h-12 w-12 text-primary mx-auto mb-4" />
+              <CardTitle className="text-2xl">Importar Atividades</CardTitle>
+              <CardDescription>
+                Clique no botão de sincronização para buscar suas atividades recentes do Strava. As calorias gastas em seus treinos serão contabilizadas em seu resumo diário.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+        
       </div>
     </AppLayout>
   );
