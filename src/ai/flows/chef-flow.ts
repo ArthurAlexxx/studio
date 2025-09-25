@@ -10,7 +10,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 // Schema for the recipe object
-export const RecipeSchema = z.object({
+const RecipeSchema = z.object({
   title: z.string(),
   description: z.string(),
   prepTime: z.string(),
@@ -85,4 +85,3 @@ const flow = ai.defineFlow(
     }
   }
 );
-
