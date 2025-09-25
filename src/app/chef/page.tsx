@@ -51,15 +51,14 @@ export default function ChefPage() {
   }, []);
 
   const handleSendMessage = async (input: string) => {
-      if (!input.trim()) return;
+      if (!input.trim() || !user) return;
 
       const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input };
       setMessages(prev => [...prev, userMessage]);
       setIsResponding(true);
 
       try {
-        // Here you would typically call your AI flow
-        const responseContent = await chefVirtualFlow(input);
+        const responseContent = await chefVirtualFlow({ prompt: input, userId: user.uid });
         
         const aiMessage: Message = {
             id: (Date.now() + 1).toString(),

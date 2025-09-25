@@ -28,24 +28,34 @@ const RecipeSchema = z.object({
 
 type Recipe = z.infer<typeof RecipeSchema>;
 
+const FlowInputSchema = z.object({
+  prompt: z.string(),
+  userId: z.string(),
+});
+
+type FlowInput = z.infer<typeof FlowInputSchema>;
+
 // Exported function to be called from the client
-export async function chefVirtualFlow(prompt: string): Promise<Recipe> {
-  return await flow(prompt);
+export async function chefVirtualFlow(input: FlowInput): Promise<Recipe> {
+  return await flow(input);
 }
 
 // The Genkit flow definition
 const flow = ai.defineFlow(
   {
     name: 'chefVirtualFlow',
-    inputSchema: z.string(),
+    inputSchema: FlowInputSchema,
     outputSchema: RecipeSchema,
   },
-  async (prompt) => {
+  async ({ prompt, userId }) => {
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
     
     const payload = {
-      action: 'chef',
-      prompt: prompt
+      sessionId: userId,
+      body: {
+        prompt: prompt,
+        action: 'chef'
+      }
     };
 
     try {
@@ -64,12 +74,13 @@ const flow = ai.defineFlow(
       const responseData = await response.json();
       let recipeData;
       
+      // Handle both array and object responses
       if (Array.isArray(responseData) && responseData.length > 0) {
           recipeData = responseData[0];
       } else if (typeof responseData === 'object' && responseData !== null && !Array.isArray(responseData)) {
           recipeData = responseData;
       } else {
-          throw new Error("Webhook response is not in the expected format (object or array with one object).");
+          throw new Error("Webhook response is not in the expected object or array format.");
       }
       
       const recipe = RecipeSchema.parse(recipeData);
