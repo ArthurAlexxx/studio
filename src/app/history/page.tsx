@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, getDocs, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import ConsumedFoodsList from '@/components/consumed-foods-list';
@@ -150,12 +150,11 @@ export default function HistoryPage() {
         // Fetch Meals for the month
         const mealsQuery = query(
             collection(db, "meal_entries"),
-            where("userId", "==", user.uid),
-            where("date", ">=", startDateString),
-            where("date", "<=", endDateString)
+            where("userId", "==", user.uid)
         );
         const mealDocs = await getDocs(mealsQuery);
-        const meals = mealDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry));
+        const meals = mealDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry))
+            .filter(entry => entry.date >= startDateString && entry.date <= endDateString);
         setMealEntries(meals);
 
         // Fetch Hydration for the month
