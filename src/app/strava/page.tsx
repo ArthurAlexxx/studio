@@ -89,10 +89,7 @@ export default function StravaPage() {
     try {
       const result = await stravaSync();
       
-      toast({
-        title: 'Sincronização iniciada!',
-        description: `O webhook está processando os dados. O console do servidor mostrará o resultado.`,
-      });
+      alert('Atividades recebidas: \n' + JSON.stringify(result, null, 2));
 
     } catch (error: any) {
       console.error("Strava sync error:", error);

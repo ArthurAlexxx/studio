@@ -34,8 +34,7 @@ const stravaSyncFlow = ai.defineFlow(
       }
 
       const activitiesData = await response.json();
-      console.log('Dados recebidos do webhook:', activitiesData);
-
+      
       // Garante que a saída seja sempre um array
       const activities = Array.isArray(activitiesData) ? activitiesData : [activitiesData];
       
