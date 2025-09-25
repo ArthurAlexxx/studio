@@ -1,18 +1,20 @@
 // src/app/hydration/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import AppLayout from '@/components/app-layout';
+import HydrationProgress from '@/components/hydration-progress';
 
 // Função para obter data local no formato YYYY-MM-DD
 const getLocalDateString = (date = new Date()) => {
@@ -24,6 +26,7 @@ export default function HydrationPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [todayHydration, setTodayHydration] = useState<HydrationEntry | null>(null);
+  const [hydrationHistory, setHydrationHistory] = useState<HydrationEntry[]>([]);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -51,12 +54,39 @@ export default function HydrationPage() {
       });
     }
   }, [user, todayHydration, toast]);
+
+  const fetchHistory = useCallback(async (uid: string) => {
+    try {
+        const q = query(
+            collection(db, 'hydration_entries'),
+            where("userId", "==", uid),
+            // Firestore requires an index for this query. Let's order client-side.
+            // orderBy("date", "desc"),
+            limit(30) // Fetch last 30 entries for calculations
+        );
+        const querySnapshot = await getDocs(q);
+        const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+        
+        // Sort client-side
+        history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        setHydrationHistory(history);
+    } catch (error: any) {
+        console.error("Error fetching hydration history:", error);
+        toast({
+            title: "Erro ao buscar histórico",
+            description: "Não foi possível carregar seu progresso de hidratação.",
+            variant: "destructive"
+        });
+    }
+  }, [toast]);
   
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setLoading(true);
+        fetchHistory(currentUser.uid);
 
         const profileUnsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (doc) => {
           if (doc.exists()) {
@@ -70,15 +100,29 @@ export default function HydrationPage() {
 
         const hydrationUnsubscribe = onSnapshot(todayDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                setTodayHydration({ id: docSnap.id, ...docSnap.data() } as HydrationEntry);
+                const data = { id: docSnap.id, ...docSnap.data() } as HydrationEntry;
+                setTodayHydration(data);
+                // Update history with today's data in real-time
+                setHydrationHistory(prev => {
+                    const index = prev.findIndex(item => item.id === data.id);
+                    if (index > -1) {
+                        const newHistory = [...prev];
+                        newHistory[index] = data;
+                        return newHistory;
+                    }
+                    return [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                });
             } else {
+                 const goal = userProfile?.waterGoal || 2000;
                 const newEntry: Omit<HydrationEntry, 'id'> = {
                     userId: currentUser.uid,
                     date: todayStr,
                     intake: 0,
-                    goal: userProfile?.waterGoal || 2000,
+                    goal: goal,
                 };
-                setDoc(todayDocRef, newEntry);
+                setDoc(todayDocRef, newEntry).then(() => {
+                    setTodayHydration({ id: todayDocId, ...newEntry });
+                });
             }
             setLoading(false);
         }, (error) => {
@@ -99,7 +143,75 @@ export default function HydrationPage() {
       }
     });
     return () => unsubscribeAuth();
-  }, [router, userProfile?.waterGoal]);
+  }, [router, fetchHistory, userProfile?.waterGoal]);
+  
+  const summaryStats = useMemo(() => {
+    const last7DaysHistory = hydrationHistory.filter(entry => 
+        isSameDay(parseISO(entry.date), new Date()) || parseISO(entry.date) >= subDays(new Date(), 6)
+    );
+
+    const totalIntake = last7DaysHistory.reduce((acc, entry) => acc + entry.intake, 0);
+    const averageIntake = last7DaysHistory.length > 0 ? totalIntake / last7DaysHistory.length : 0;
+    
+    const goalsMet = last7DaysHistory.filter(entry => entry.intake >= entry.goal).length;
+    const goalMetPercentage = last7DaysHistory.length > 0 ? (goalsMet / last7DaysHistory.length) * 100 : 0;
+    
+    return { averageIntake, goalMetPercentage };
+  }, [hydrationHistory]);
+
+  const currentStreak = useMemo(() => {
+        const sortedHistory = [...hydrationHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        let streak = 0;
+        let today = new Date();
+        
+        // Check today
+        const todayEntry = sortedHistory.find(entry => isSameDay(parseISO(entry.date), today));
+        if (todayEntry && todayEntry.intake >= todayEntry.goal) {
+            streak++;
+        } else if (todayEntry && todayEntry.intake < todayEntry.goal) {
+            return 0; // If today's goal is not met, streak is 0
+        } else if (!todayEntry) {
+            // No entry for today, so streak is 0
+            return 0;
+        }
+
+        // Check consecutive previous days
+        for (let i = 1; i < sortedHistory.length; i++) {
+            const currentDate = subDays(today, streak);
+            const entry = sortedHistory.find(e => isSameDay(parseISO(e.date), subDays(today, i)));
+            
+            if (entry && entry.intake >= entry.goal && isSameDay(parseISO(entry.date), subDays(today, streak))) {
+                 streak++;
+            } else {
+                break; // Streak is broken
+            }
+        }
+
+        return streak;
+  }, [hydrationHistory]);
+
+  const weeklyChartData = useMemo(() => {
+    const today = new Date();
+    const weekStart = startOfWeek(today, { locale: ptBR });
+    const weekEnd = endOfWeek(today, { locale: ptBR });
+    const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+    return daysOfWeek.map(day => {
+        const formattedDate = getLocalDateString(day);
+        const entry = hydrationHistory.find(h => h.date === formattedDate);
+        return {
+            date: day,
+            day: format(day, 'E', { locale: ptBR }),
+            dayOfMonth: format(day, 'dd'),
+            intake: entry?.intake || 0,
+            goal: entry?.goal || userProfile?.waterGoal || 2000,
+            isComplete: entry ? entry.intake >= entry.goal : false,
+            isToday: isSameDay(day, today),
+        };
+    });
+  }, [hydrationHistory, userProfile?.waterGoal]);
+
 
   if (loading || !userProfile || !todayHydration) {
     return (
@@ -120,16 +232,24 @@ export default function HydrationPage() {
       <div className="container mx-auto py-8 px-4 sm:px-6 md:px-8">
         <div className="mb-6 animate-fade-in">
             <h2 className="text-2xl font-bold text-foreground">Controle de Hidratação</h2>
-            <p className="text-muted-foreground">Acompanhe seu consumo de água diário.</p>
+            <p className="text-muted-foreground">Acompanhe seu consumo de água diário e seu progresso ao longo do tempo.</p>
         </div>
-        <div className="flex justify-center">
-            <div className="w-full max-w-md">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1 w-full">
                  <WaterTrackerCard
                     waterIntake={todayHydration.intake}
                     waterGoal={todayHydration.goal}
                     onWaterUpdate={handleWaterUpdate}
                 />
             </div>
+             <div className="lg:col-span-2 w-full">
+                <HydrationProgress
+                    weeklyData={weeklyChartData}
+                    averageIntake={summaryStats.averageIntake}
+                    goalMetPercentage={summaryStats.goalMetPercentage}
+                    streak={currentStreak}
+                />
+             </div>
         </div>
       </div>
     </AppLayout>
