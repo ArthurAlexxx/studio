@@ -52,7 +52,8 @@ const stravaSyncFlow = ai.defineFlow(
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
       
-      const responseData: { json: any }[] = await response.json();
+      // Espera um array de objetos de atividade diretamente
+      const responseData = await response.json();
       
       if (!Array.isArray(responseData)) {
           console.error('Webhook did not return an array. Data:', responseData);
@@ -62,14 +63,13 @@ const stravaSyncFlow = ai.defineFlow(
       const batch = db.batch();
       let syncedCount = 0;
 
-      responseData.forEach(item => {
-          const activity = item.json; // Extract the activity from the 'json' key
+      responseData.forEach(activity => {
           if (activity && activity.id) {
               const activityRef = db.collection('users').doc(userId).collection('strava_activities').doc(String(activity.id));
               batch.set(activityRef, activity, { merge: true });
               syncedCount++;
           } else {
-              console.warn('Skipping an item without an activity or ID:', item);
+              console.warn('Skipping an item without an ID:', activity);
           }
       });
       
