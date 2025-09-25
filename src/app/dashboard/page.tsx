@@ -159,11 +159,12 @@ export default function DashboardPage() {
         const weeklyHydrationQuery = query(
             collection(db, 'hydration_entries'),
             where("userId", "==", currentUser.uid),
-            where("date", ">=", weekAgoDate),
-            orderBy("date", "desc")
+            where("date", ">=", weekAgoDate)
         );
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (querySnapshot) => {
             const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+            // Sort on the client
+            history.sort((a, b) => b.date.localeCompare(a.date));
             setHydrationHistory(history);
         }, (error) => {
             console.error("Error fetching weekly hydration:", error);
