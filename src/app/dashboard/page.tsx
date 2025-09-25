@@ -171,12 +171,13 @@ export default function DashboardPage() {
         const weeklyHydrationQuery = query(
           collection(db, 'hydration_entries'),
           where('userId', '==', currentUser.uid),
-          where('date', '>=', sevenDaysAgo),
-          orderBy('date', 'desc')
+          where('date', '>=', sevenDaysAgo)
         );
 
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
           const weeklyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+          // Sort manually on the client-side
+          weeklyData.sort((a, b) => b.date.localeCompare(a.date));
           setHydrationHistory(weeklyData);
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
         }, (error) => {
