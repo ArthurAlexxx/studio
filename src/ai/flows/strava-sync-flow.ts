@@ -11,7 +11,6 @@ import { z } from 'zod';
 import * as admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
 import serviceAccount from '@/lib/firebase/service-account.json';
-import type { StravaActivity } from '@/types/strava';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!getApps().length) {
@@ -55,21 +54,13 @@ const stravaSyncFlow = ai.defineFlow(
       
       const responseData = await response.json();
       
-      // Flexible handling of the webhook response body
-      let activitiesData;
-      if (typeof responseData.body === 'string') {
-        try {
-          activitiesData = JSON.parse(responseData.body);
-        } catch (e) {
-          console.error("Failed to parse response body string:", e);
-          throw new Error("The response body is a malformed JSON string.");
-        }
-      } else {
-        activitiesData = responseData.body;
+      // Access the array inside the "atividades" key
+      const activitiesToProcess = responseData.atividades;
+
+      if (!Array.isArray(activitiesToProcess)) {
+        console.error('Webhook response did not contain an "atividades" array:', responseData);
+        throw new Error('Webhook response is not in the expected format.');
       }
-      
-      // Ensure activitiesData is always an array
-      const activitiesToProcess = Array.isArray(activitiesData) ? activitiesData : [activitiesData];
 
       const batch = db.batch();
       let syncedCount = 0;
