@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase/client';
@@ -34,31 +34,14 @@ export default function StravaPage() {
           if (doc.exists()) {
             setUserProfile(doc.data() as UserProfile);
           }
-          // We will set loading to false after activities are fetched
+          setLoading(false);
         }, () => {
           setLoading(false);
           router.push('/login');
         });
 
-        // Listen for Strava activities in real-time
-        const activitiesQuery = query(
-          collection(db, 'users', currentUser.uid, 'strava_activities'),
-          orderBy('data_inicio_local', 'desc')
-        );
-
-        const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
-          const fetchedActivities = snapshot.docs.map(doc => doc.data() as StravaActivity);
-          setActivities(fetchedActivities);
-          setLoading(false); // Activities loaded
-        }, (error) => {
-          console.error("Error fetching Strava activities:", error);
-          toast({ title: "Erro ao buscar atividades", description: "Não foi possível carregar suas atividades do Strava.", variant: "destructive" });
-          setLoading(false);
-        });
-
         return () => {
           unsubscribeProfile();
-          unsubscribeActivities();
         };
 
       } else {
@@ -82,12 +65,15 @@ export default function StravaPage() {
         return;
     }
     setSyncing(true);
+    setActivities([]); // Limpa as atividades anteriores antes de uma nova busca
     try {
-      await stravaSync({ userId: user.uid });
+      const syncedActivities = await stravaSync();
       
+      setActivities(syncedActivities);
+
       toast({
-        title: 'Sincronização Iniciada! ✅',
-        description: `Buscando novas atividades. Elas aparecerão aqui em breve.`,
+        title: 'Sincronização Concluída! ✅',
+        description: `Encontramos ${syncedActivities.length} novas atividades.`,
       });
 
     } catch (error: any) {
@@ -122,7 +108,7 @@ export default function StravaPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start mb-8 animate-fade-in">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Minhas Atividades</h1>
-            <p className="text-muted-foreground max-w-2xl mt-2">Suas atividades físicas importadas do Strava. Clique para sincronizar novas atividades.</p>
+            <p className="text-muted-foreground max-w-2xl mt-2">Suas atividades físicas importadas do Strava. Clique para buscar as atividades mais recentes.</p>
           </div>
           <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md mt-4 sm:mt-0 shrink-0">
               {syncing ? (
@@ -146,12 +132,12 @@ export default function StravaPage() {
             ))}
           </div>
         ) : (
-          <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in mt-12" style={{animationDelay: '150ms'}}>
+           <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in mt-12" style={{animationDelay: '150ms'}}>
             <CardHeader className="text-center">
               <HeartPulse className="h-12 w-12 text-primary mx-auto mb-4" />
-              <CardTitle className="text-2xl">Nenhuma Atividade Encontrada</CardTitle>
+              <CardTitle className="text-2xl">Nenhuma Atividade Carregada</CardTitle>
               <CardDescription>
-                Clique no botão de sincronização para buscar e salvar suas atividades do Strava. As calorias gastas em seus treinos serão contabilizadas em seu resumo diário.
+                Clique no botão de sincronização para buscar e exibir suas atividades do Strava.
               </CardDescription>
             </CardHeader>
           </Card>
