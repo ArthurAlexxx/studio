@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -127,20 +127,28 @@ export default function DashboardPage() {
             if(!areMealsLoaded) setAreMealsLoaded(true);
         });
         
-        const sevenDaysAgo = subDays(new Date(), 6);
-        const weekDates = eachDayOfInterval({ start: sevenDaysAgo, end: new Date() });
-        
-        weekDates.forEach(date => {
-            const dateStr = getLocalDateString(date);
-            const dailyMealsQuery = query(
-                collection(db, "meal_entries"),
-                where("userId", "==", currentUser.uid),
-                where("date", "==", dateStr)
-            );
-            getDocs(dailyMealsQuery).then(snapshot => {
-                const totalCals = snapshot.docs.reduce((sum, doc) => sum + (doc.data().mealData.totais.calorias || 0), 0);
-                setWeeklyCalories(prev => ({ ...prev, [dateStr]: totalCals }));
+        const sevenDaysAgoStr = getLocalDateString(subDays(new Date(), 6));
+        const weeklyMealsQuery = query(
+            collection(db, "meal_entries"),
+            where("userId", "==", currentUser.uid),
+            where("date", ">=", sevenDaysAgoStr),
+            where("date", "<=", todayStr)
+        );
+
+        const unsubscribeWeeklyMeals = onSnapshot(weeklyMealsQuery, (snapshot) => {
+            const weekDates = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() });
+            const caloriesByDay: Record<string, number> = {};
+            weekDates.forEach(d => {
+                caloriesByDay[getLocalDateString(d)] = 0;
             });
+
+            snapshot.docs.forEach(doc => {
+                const meal = doc.data();
+                if (meal.date in caloriesByDay) {
+                    caloriesByDay[meal.date] += meal.mealData.totais.calorias || 0;
+                }
+            });
+            setWeeklyCalories(caloriesByDay);
         });
 
         const todayDocId = `${currentUser.uid}_${todayStr}`;
@@ -178,11 +186,11 @@ export default function DashboardPage() {
         }, (error) => {
             console.error("Error fetching today's hydration:", error);
         });
-
+        
         const weeklyHydrationQuery = query(
           collection(db, 'hydration_entries'),
           where('userId', '==', currentUser.uid),
-          where('date', '>=', getLocalDateString(sevenDaysAgo)),
+          where('date', '>=', sevenDaysAgoStr),
           where('date', '<=', todayStr)
         );
 
@@ -204,6 +212,7 @@ export default function DashboardPage() {
         return () => {
             unsubscribeProfile();
             unsubscribeMeals();
+            unsubscribeWeeklyMeals();
             unsubscribeTodayHydration();
             unsubscribeWeeklyHydration();
         };
