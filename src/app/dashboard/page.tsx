@@ -143,7 +143,8 @@ export default function DashboardPage() {
                         newHistory[existingIndex] = data;
                         return newHistory;
                     }
-                    return [...prevHistory, data].sort((a, b) => b.date.localeCompare(a.date));
+                    // Sort is handled by the weekly query now
+                    return [...prevHistory, data]; 
                 });
 
             } else {
@@ -158,7 +159,7 @@ export default function DashboardPage() {
                 setDoc(todayDocRef, newEntry).then(() => {
                     const newHydrationEntry = { id: todayDocId, ...newEntry };
                     setTodayHydration(newHydrationEntry);
-                     setHydrationHistory(prev => [...prev, newHydrationEntry].sort((a, b) => b.date.localeCompare(a.date)));
+                     setHydrationHistory(prev => [...prev, newHydrationEntry]);
                 });
             }
         }, (error) => {
@@ -180,13 +181,12 @@ export default function DashboardPage() {
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
         }, (error) => {
           console.error("FirebaseError:", error.message);
+          toast({
+            title: "Erro ao carregar histórico de hidratação",
+            description: "Verifique se o índice do Firestore foi criado corretamente. Detalhes no console.",
+            variant: "destructive"
+          });
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
-          // Optional: Show a toast to the user
-          // toast({
-          //   title: "Erro ao carregar histórico de hidratação",
-          //   description: "Não foi possível buscar os dados da semana. O gráfico pode não ser exibido.",
-          //   variant: "destructive"
-          // });
         });
         
         return () => {
@@ -207,7 +207,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeAuth();
-  }, [router, isProfileLoaded, areMealsLoaded, isHydrationLoaded, userProfile?.waterGoal]);
+  }, [router, isProfileLoaded, areMealsLoaded, isHydrationLoaded, userProfile?.waterGoal, toast]);
 
   useEffect(() => {
     if (isProfileLoaded && areMealsLoaded && isHydrationLoaded) {
