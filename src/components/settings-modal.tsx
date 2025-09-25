@@ -1,7 +1,7 @@
 // src/components/settings-modal.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -19,6 +19,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 const formSchema = z.object({
   calorieGoal: z.coerce.number().min(1, 'A meta de calorias deve ser maior que 0.'),
   proteinGoal: z.coerce.number().min(1, 'A meta de proteínas deve ser maior que 0.'),
+  waterGoal: z.coerce.number().min(1, 'A meta de água deve ser maior que 0.'),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -33,35 +34,37 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onOpenChange, userProfile, userId, onProfileUpdate }: SettingsModalProps) {
   const { toast } = useToast();
-  const [autoCalculate, setAutoCalculate] = useState(true);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       calorieGoal: userProfile.calorieGoal || 2000,
       proteinGoal: userProfile.proteinGoal || 140,
+      waterGoal: userProfile.waterGoal || 2000,
     },
   });
   
   const { isSubmitting } = form.formState;
-  const calorieGoal = form.watch('calorieGoal');
 
   useEffect(() => {
-    if (autoCalculate) {
-      const calculatedProtein = Math.round((calorieGoal * 0.30) / 4);
-      form.setValue('proteinGoal', calculatedProtein > 0 ? calculatedProtein : 1);
-    }
-  }, [calorieGoal, autoCalculate, form]);
+    form.reset({
+      calorieGoal: userProfile.calorieGoal,
+      proteinGoal: userProfile.proteinGoal,
+      waterGoal: userProfile.waterGoal,
+    });
+  }, [userProfile, form]);
 
   const onSubmit = async (data: SettingsFormValues) => {
     try {
       const userDocRef = doc(db, 'users', userId);
-      await updateDoc(userDocRef, {
+      const updatedProfile = {
         calorieGoal: data.calorieGoal,
         proteinGoal: data.proteinGoal,
-      });
+        waterGoal: data.waterGoal,
+      };
+      await updateDoc(userDocRef, updatedProfile);
 
-      onProfileUpdate(data);
+      onProfileUpdate(updatedProfile);
 
       toast({
         title: 'Metas Atualizadas!',
@@ -83,7 +86,7 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Definir Metas Diárias</DialogTitle>
           <DialogDescription>
-            Personalize suas metas ou deixe que o app calcule a proteína para você.
+            Personalize suas metas de calorias, proteínas e água.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -102,17 +105,6 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
               )}
             />
             
-            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                <div className="space-y-0.5">
-                    <FormLabel className="font-semibold">Calcular proteína automaticamente</FormLabel>
-                    <p className="text-xs text-muted-foreground">Calcula 30% das calorias (recomendado 10-35%)</p>
-                </div>
-                <Switch
-                    checked={autoCalculate}
-                    onCheckedChange={setAutoCalculate}
-                />
-            </div>
-
             <FormField
               control={form.control}
               name="proteinGoal"
@@ -120,7 +112,21 @@ export default function SettingsModal({ isOpen, onOpenChange, userProfile, userI
                 <FormItem>
                   <FormLabel className="font-semibold">Meta de Proteínas (g)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Ex: 150" {...field} disabled={autoCalculate} />
+                    <Input type="number" placeholder="Ex: 150" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="waterGoal"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-semibold">Meta de Água (ml)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Ex: 2000" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

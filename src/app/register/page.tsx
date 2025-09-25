@@ -57,6 +57,8 @@ export default function RegisterPage() {
             lastLoginDate: null,
             calorieGoal: 2000,
             proteinGoal: 140,
+            waterGoal: 2000, // Meta de água em ml
+            waterIntake: 0,   // Consumo de água inicial
         });
 
         toast({

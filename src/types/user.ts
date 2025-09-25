@@ -7,4 +7,6 @@ export interface UserProfile {
     lastLoginDate: string | null;
     calorieGoal: number;
     proteinGoal: number;
+    waterGoal: number; // Meta diária de água em ml
+    waterIntake: number; // Consumo atual de água em ml
 }

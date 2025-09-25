@@ -11,9 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, updateDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
+import WaterTrackerCard from '@/components/water-tracker-card';
 
 export default function DashboardPage() {
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
@@ -58,16 +59,40 @@ export default function DashboardPage() {
     });
   }, []);
 
+  const handleWaterUpdate = useCallback(async (newWaterIntake: number) => {
+    if (!user || !userProfile) return;
+
+    const updatedIntake = Math.max(0, newWaterIntake);
+
+    setUserProfile(prev => prev ? { ...prev, waterIntake: updatedIntake } : null);
+    
+    try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, { waterIntake: updatedIntake });
+    } catch (error: any) {
+        console.error("Failed to update water intake:", error);
+        toast({
+            title: "Erro ao atualizar hidratação",
+            description: "Não foi possível salvar seu consumo de água.",
+            variant: "destructive"
+        });
+        // Reverter o estado local em caso de erro
+        setUserProfile(prev => prev ? { ...prev, waterIntake: userProfile.waterIntake } : null);
+    }
+  }, [user, userProfile, toast]);
+
+
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         try {
-          // --- Fetch User Profile and Update Streak ---
+          // --- Fetch User Profile and Update Streak/Water ---
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDoc = await getDoc(userDocRef);
           
           let profileData: UserProfile;
+          let updates: Partial<UserProfile> = {};
 
           if (userDoc.exists()) {
             profileData = userDoc.data() as UserProfile;
@@ -75,20 +100,23 @@ export default function DashboardPage() {
             const lastLogin = profileData.lastLoginDate;
 
             if (lastLogin !== today) {
+              // Reset water intake for the new day
+              updates.waterIntake = 0;
+              profileData.waterIntake = 0;
+
               const yesterday = new Date();
               yesterday.setDate(yesterday.getDate() - 1);
               
               if (lastLogin && differenceInCalendarDays(new Date(), parseISO(lastLogin)) === 1) {
-                profileData.currentStreak = (profileData.currentStreak || 0) + 1;
+                updates.currentStreak = (profileData.currentStreak || 0) + 1;
               } else {
-                profileData.currentStreak = 1;
+                updates.currentStreak = 1;
               }
-              profileData.lastLoginDate = today;
+              updates.lastLoginDate = today;
+              
+              profileData = { ...profileData, ...updates };
 
-              await updateDoc(userDocRef, {
-                currentStreak: profileData.currentStreak,
-                lastLoginDate: profileData.lastLoginDate
-              });
+              await updateDoc(userDocRef, updates);
             }
           } else {
             profileData = {
@@ -98,17 +126,19 @@ export default function DashboardPage() {
               lastLoginDate: new Date().toISOString().split('T')[0],
               calorieGoal: 2000,
               proteinGoal: 140,
+              waterGoal: 2000,
+              waterIntake: 0,
             };
             await setDoc(userDocRef, profileData);
           }
           setUserProfile(profileData);
 
           // --- Setup Real-time Listener for Meals ---
-          const today = new Date().toISOString().split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
           const q = query(
             collection(db, "meal_entries"),
             where("userId", "==", currentUser.uid),
-            where("date", "==", today)
+            where("date", "==", todayStr)
           );
           
           const unsubscribeMeals = onSnapshot(q, (querySnapshot) => {
@@ -159,7 +189,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !userProfile) {
     return null;
   }
   
@@ -177,6 +207,13 @@ export default function DashboardPage() {
         <div className="container mx-auto">
               <>
                 <DashboardMetrics meals={mealsToday} userProfile={userProfile} />
+                <div className="mt-8">
+                    <WaterTrackerCard
+                        waterIntake={userProfile.waterIntake}
+                        waterGoal={userProfile.waterGoal}
+                        onWaterUpdate={handleWaterUpdate}
+                    />
+                </div>
                 <div className="mt-8">
                   <ConsumedFoodsList 
                     mealEntries={mealEntries} 
