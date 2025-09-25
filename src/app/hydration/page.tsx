@@ -56,17 +56,21 @@ export default function HydrationPage() {
   }, [user, todayHydration, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
+    // Consulta simplificada para evitar erro de índice
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      orderBy('date', 'desc'),
       limit(30)
     );
 
     try {
       const querySnapshot = await getDocs(q);
       const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-      setHydrationHistory(history);
+      
+      // Ordenação feita no cliente
+      const sortedHistory = history.sort((a, b) => b.date.localeCompare(a.date));
+      
+      setHydrationHistory(sortedHistory);
     } catch(e) {
       console.error(e);
       toast({
@@ -205,19 +209,23 @@ export default function HydrationPage() {
       // If today goal is not met, but it is today, check from yesterday
       expectedDate.setDate(expectedDate.getDate() - 1);
     } else if (!todayEntry) {
-      // If there is no entry for today, check from yesterday, streak is 0
+       // If there's no entry for today, check from yesterday but reset streak
+       expectedDate.setDate(expectedDate.getDate() - 1);
     }
     
-    // Check consecutive previous days
+    // Check consecutive previous days from the rest of the history
     const remainingHistory = sortedHistory.filter(e => e.date < todayStr);
 
     for (const entry of remainingHistory) {
       const expectedDateStr = getLocalDateString(expectedDate);
-      if (entry.date === expectedDateStr && entry.intake >= entry.goal) {
-        streak++;
-        expectedDate.setDate(expectedDate.getDate() - 1);
-      } else if (entry.date === expectedDateStr && entry.intake < entry.goal) {
-        break; // Streak is broken
+      if (entry.date === expectedDateStr) {
+        if (entry.intake >= entry.goal) {
+          streak++;
+          expectedDate.setDate(expectedDate.getDate() - 1);
+        } else {
+          // Streak is broken if goal not met on an expected day
+          break;
+        }
       } else if (entry.date < expectedDateStr) {
         // A day is missing, streak is broken
         break;
