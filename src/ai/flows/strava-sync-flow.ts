@@ -1,9 +1,9 @@
 
 'use server';
 /**
- * @fileOverview A flow to synchronize Strava activities and return them.
+ * @fileOverview A flow to synchronize Strava activities and save them to Firestore.
  *
- * - stravaSync - A function that triggers a webhook to fetch activities and save them to Firestore.
+ * - stravaSync - A function that triggers a webhook to fetch activities and saves them to Firestore.
  */
 
 import { ai } from '@/ai/genkit';
@@ -11,6 +11,7 @@ import { z } from 'zod';
 import * as admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
 import serviceAccount from '@/lib/firebase/service-account.json';
+import type { StravaActivity } from '@/types/strava';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!getApps().length) {
@@ -52,18 +53,17 @@ const stravaSyncFlow = ai.defineFlow(
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
       
-      // Espera um array de objetos de atividade diretamente
-      const responseData = await response.json();
+      const activitiesData: StravaActivity[] = await response.json();
       
-      if (!Array.isArray(responseData)) {
-          console.error('Webhook did not return an array. Data:', responseData);
+      if (!Array.isArray(activitiesData)) {
+          console.error('Webhook did not return an array. Data:', activitiesData);
           throw new Error('Webhook response is not in the expected format (array).');
       }
 
       const batch = db.batch();
       let syncedCount = 0;
 
-      responseData.forEach(activity => {
+      activitiesData.forEach(activity => {
           if (activity && activity.id) {
               const activityRef = db.collection('users').doc(userId).collection('strava_activities').doc(String(activity.id));
               batch.set(activityRef, activity, { merge: true });
