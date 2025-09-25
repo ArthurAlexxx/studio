@@ -31,8 +31,7 @@ const getSportIcon = (sportType: string) => {
 
 export default function StravaActivityCard({ activity }: StravaActivityCardProps) {
   const activityDate = new Date(activity.data_inicio_local);
-  const formattedDate = format(activityDate, "dd 'de' MMM, yyyy", { locale: ptBR });
-  const formattedTime = format(activityDate, "HH:mm", { locale: ptBR });
+  const formattedDate = format(activityDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
   return (
     <Card className="shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl w-full">
@@ -45,7 +44,7 @@ export default function StravaActivityCard({ activity }: StravaActivityCardProps
                 <CardTitle className="text-base font-bold leading-tight">{activity.nome}</CardTitle>
                 <CardDescription className="text-sm flex items-center gap-1.5 mt-1">
                     <Calendar className="h-3.5 w-3.5" />
-                    {formattedDate} às {formattedTime}
+                    {formattedDate}
                 </CardDescription>
             </div>
         </div>
