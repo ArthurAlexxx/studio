@@ -63,7 +63,6 @@ export default function HydrationPage() {
   }, [user, userProfile, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
-    // Consulta otimizada para buscar os últimos 7 registros, ordenados do mais recente para o mais antigo.
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
@@ -72,7 +71,6 @@ export default function HydrationPage() {
     );
 
     const querySnapshot = await getDocs(q);
-    // Inverte a ordem para que o gráfico mostre do mais antigo para o mais recente.
     const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry).reverse();
     setHydrationHistory(history);
   }, []);
@@ -99,7 +97,6 @@ export default function HydrationPage() {
             if (profileData.waterGoal === undefined) updates.waterGoal = 2000;
 
             if (lastLogin && lastLogin !== todayStr) {
-                // Save previous day's entry
                 const yesterdayStr = getLocalDateString(new Date(lastLogin));
                 const entryRef = doc(db, 'hydration_entries', `${currentUser.uid}_${yesterdayStr}`);
                 
@@ -111,7 +108,6 @@ export default function HydrationPage() {
                     goal: profileData.waterGoal
                 });
 
-                // Reset for today
                 updates.waterIntake = 0; 
                 if (differenceInCalendarDays(new Date(), parseISO(lastLogin)) === 1) {
                     updates.currentStreak = (profileData.currentStreak || 0) + 1;
