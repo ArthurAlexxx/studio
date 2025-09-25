@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase/client';
@@ -28,20 +28,39 @@ export default function StravaPage() {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+
         const userDocRef = doc(db, 'users', currentUser.uid);
-        
         const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setUserProfile(doc.data() as UserProfile);
+          } else {
+             setLoading(false);
+             router.push('/login');
           }
-          setLoading(false);
         }, () => {
           setLoading(false);
           router.push('/login');
         });
+        
+        const activitiesQuery = query(collection(db, 'users', currentUser.uid, 'strava_activities'));
+        const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
+            const loadedActivities = snapshot.docs.map(d => d.data() as StravaActivity);
+            loadedActivities.sort((a, b) => new Date(b.data_inicio_local).getTime() - new Date(a.data_inicio_local).getTime());
+            setActivities(loadedActivities);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching activities:", error);
+            setLoading(false);
+             toast({
+                title: "Erro ao Carregar Atividades",
+                description: "Não foi possível carregar suas atividades salvas.",
+                variant: "destructive"
+             });
+        });
 
         return () => {
           unsubscribeProfile();
+          unsubscribeActivities();
         };
 
       } else {
@@ -65,15 +84,12 @@ export default function StravaPage() {
         return;
     }
     setSyncing(true);
-    setActivities([]); // Limpa as atividades anteriores antes de uma nova busca
     try {
-      const syncedActivities = await stravaSync();
-      
-      setActivities(syncedActivities);
+      const result = await stravaSync({ userId: user.uid });
 
       toast({
         title: 'Sincronização Concluída! ✅',
-        description: `Encontramos ${syncedActivities.length} novas atividades.`,
+        description: `Encontramos e salvamos ${result.syncedCount} atividades.`,
       });
 
     } catch (error: any) {
@@ -108,7 +124,7 @@ export default function StravaPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start mb-8 animate-fade-in">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Minhas Atividades</h1>
-            <p className="text-muted-foreground max-w-2xl mt-2">Suas atividades físicas importadas do Strava. Clique para buscar as atividades mais recentes.</p>
+            <p className="text-muted-foreground max-w-2xl mt-2">Suas atividades físicas importadas do Strava. Clique para buscar e salvar as atividades mais recentes.</p>
           </div>
           <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md mt-4 sm:mt-0 shrink-0">
               {syncing ? (
@@ -131,7 +147,7 @@ export default function StravaPage() {
               <StravaActivityCard key={activity.id} activity={activity} />
             ))}
           </div>
-        ) : (
+        ) : !loading && (
            <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in mt-12" style={{animationDelay: '150ms'}}>
             <CardHeader className="text-center">
               <HeartPulse className="h-12 w-12 text-primary mx-auto mb-4" />

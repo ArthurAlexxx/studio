@@ -1,35 +1,29 @@
 'use server';
 /**
- * @fileOverview Um fluxo para sincronizar atividades do Strava.
+ * @fileOverview A flow to synchronize Strava activities and save them to Firestore.
  *
- * - stravaSync - Uma função que aciona um webhook para buscar as atividades.
+ * - stravaSync - A function that triggers a webhook to fetch activities and saves them to the user's database.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import type { StravaActivity } from '@/types/strava';
 
-const StravaSyncInputSchema = z.object({});
+const StravaSyncInputSchema = z.object({
+  userId: z.string().describe('The ID of the user to associate the activities with.'),
+});
 type StravaSyncInput = z.infer<typeof StravaSyncInputSchema>;
 
-// Definindo o esquema para uma única atividade para garantir a consistência dos dados
-const StravaActivitySchema = z.object({
-  id: z.number(),
-  nome: z.string(),
-  tipo: z.string(),
-  sport_type: z.string(),
-  distancia_km: z.number(),
-  tempo_min: z.number(),
-  elevacao_ganho: z.number(),
-  data_inicio_local: z.string(),
+// The flow returns a count of synced activities.
+const StravaSyncOutputSchema = z.object({
+  syncedCount: z.number(),
 });
-
-// O fluxo retorna um array de atividades
-const StravaSyncOutputSchema = z.array(StravaActivitySchema);
 type StravaSyncOutput = z.infer<typeof StravaSyncOutputSchema>;
 
-export async function stravaSync(input?: StravaSyncInput): Promise<StravaSyncOutput> {
-  return await stravaSyncFlow(input || {});
+export async function stravaSync(input: StravaSyncInput): Promise<StravaSyncOutput> {
+  return await stravaSyncFlow(input);
 }
 
 const stravaSyncFlow = ai.defineFlow(
@@ -38,33 +32,62 @@ const stravaSyncFlow = ai.defineFlow(
     inputSchema: StravaSyncInputSchema,
     outputSchema: StravaSyncOutputSchema,
   },
-  async () => {
+  async ({ userId }) => {
+    let serviceAccount;
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+        }
+    } catch (e) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
+        throw new Error('Firebase service account key is not valid JSON.');
+    }
+
+    if (!getApps().length) {
+      initializeApp({
+        credential: serviceAccount ? cert(serviceAccount) : undefined,
+      });
+    }
+
+    const db = getFirestore();
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/e70734fa-c464-4ea5-828b-d1b68da30a41';
 
     try {
       const response = await fetch(webhookUrl, { method: 'POST' });
 
-      if (response.ok) {
-        let activities: StravaActivity[] = await response.json();
-        
-        // O webhook pode retornar um array dentro de outro array, ou um objeto único
-        if (Array.isArray(activities) && activities.length > 0 && Array.isArray(activities[0])) {
-            activities = activities[0]; 
-        } else if (!Array.isArray(activities)) {
-            activities = [activities as any];
-        }
-
-        // Garante que o retorno seja sempre um array, mesmo que vazio.
-        return activities || [];
-
-      } else {
+      if (!response.ok) {
         const errorBody = await response.text();
-        console.error(`Falha ao acionar o webhook. Status: ${response.status}. Detalhes: ${errorBody}`);
-        throw new Error(`Falha na sincronização com o Strava. Status: ${response.status}`);
+        console.error(`Failed to trigger webhook. Status: ${response.status}. Details: ${errorBody}`);
+        throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
+
+      let data = await response.json();
+      
+      let activities: StravaActivity[] = Array.isArray(data) && Array.isArray(data[0]) 
+          ? data[0] 
+          : Array.isArray(data)
+          ? data
+          : [data];
+
+      if (!activities || activities.length === 0) {
+        return { syncedCount: 0 };
+      }
+      
+      const batch = db.batch();
+      const userActivitiesRef = db.collection('users').doc(userId).collection('strava_activities');
+      
+      activities.forEach(activity => {
+        const docRef = userActivitiesRef.doc(String(activity.id));
+        batch.set(docRef, activity);
+      });
+
+      await batch.commit();
+
+      return { syncedCount: activities.length };
+
     } catch (error: any) {
-      console.error('Erro ao chamar e processar dados do Strava:', error);
-       throw new Error('Ocorreu um erro ao processar os dados do Strava.');
+      console.error('Error calling and processing data from Strava:', error);
+      throw new Error('An error occurred while processing data from Strava.');
     }
   }
 );
