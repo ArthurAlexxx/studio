@@ -66,12 +66,27 @@ export default function ChefPage() {
       });
 
       if (response.ok) {
-        const recipeFromWebhook = await response.json();
-        setGeneratedRecipe(recipeFromWebhook);
-        toast({
-            title: "Receita Gerada! 🍳",
-            description: "Sua nova receita está pronta para ser preparada."
-        });
+        const responseData = await response.json();
+        
+        if (responseData && responseData.length > 0 && responseData[0].output) {
+            // Extrai a string JSON de dentro do campo 'output'
+            let recipeString = responseData[0].output;
+
+            // Remove os marcadores de bloco de código se existirem
+            if (recipeString.startsWith('```json')) {
+              recipeString = recipeString.substring(7, recipeString.length - 3).trim();
+            }
+
+            const recipe = JSON.parse(recipeString);
+            setGeneratedRecipe(recipe);
+            
+            toast({
+                title: "Receita Gerada! 🍳",
+                description: "Sua nova receita está pronta para ser preparada."
+            });
+        } else {
+            throw new Error("A resposta do webhook não está no formato esperado.");
+        }
       } else {
          const errorText = await response.text();
          console.error("Failed to generate recipe from webhook:", errorText);
@@ -84,16 +99,6 @@ export default function ChefPage() {
          description: "Não foi possível conectar ao serviço. Por favor, tente novamente.",
          variant: "destructive"
        });
-       // Opcional: pode-se remover o fallback ou mantê-lo para debug
-       const fallbackRecipe: Recipe = {
-          title: 'Macarrão ao alho e óleo (Fallback)',
-          description: 'Uma receita simples e rápida para quando a criatividade falha.',
-          prepTime: '5 min', cookTime: '15 min', servings: '1',
-          ingredients: ['100g de macarrão', '2 dentes de alho', 'Azeite', 'Sal e pimenta'],
-          instructions: ['Cozinhe o macarrão.', 'Frite o alho no azeite.', 'Misture tudo e sirva.'],
-          nutrition: { calories: '400 kcal', protein: '12g', carbs: '70g', fat: '8g' }
-       };
-       setGeneratedRecipe(fallbackRecipe);
     } finally {
       setIsGenerating(false);
     }
