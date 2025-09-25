@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -82,7 +82,8 @@ export default function HistoryPage() {
     const mealsQuery = query(
       collection(db, "meal_entries"),
       where("userId", "==", user.uid),
-      where("date", "==", formattedDate)
+      where("date", "==", formattedDate),
+      orderBy("createdAt", "asc")
     );
 
     const unsubscribeMeals = onSnapshot(mealsQuery, (querySnapshot) => {

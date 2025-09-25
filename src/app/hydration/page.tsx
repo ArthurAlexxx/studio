@@ -56,21 +56,17 @@ export default function HydrationPage() {
   }, [user, todayHydration, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
-    // Consulta simplificada para evitar erro de índice
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
+      orderBy('date', 'desc'),
       limit(30)
     );
 
     try {
       const querySnapshot = await getDocs(q);
       const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-      
-      // Ordenação feita no cliente
-      const sortedHistory = history.sort((a, b) => b.date.localeCompare(a.date));
-      
-      setHydrationHistory(sortedHistory);
+      setHydrationHistory(history);
     } catch(e) {
       console.error(e);
       toast({
