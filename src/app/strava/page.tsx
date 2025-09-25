@@ -89,11 +89,9 @@ export default function StravaPage() {
     try {
       const result = await stravaSync();
       
-      alert(JSON.stringify(result, null, 2));
-
       toast({
-        title: 'Dados Recebidos!',
-        description: `O webhook retornou ${result.length} atividades. Confira o alerta.`,
+        title: 'Sincronização iniciada!',
+        description: `O webhook está processando os dados. O console do servidor mostrará o resultado.`,
       });
 
     } catch (error: any) {
