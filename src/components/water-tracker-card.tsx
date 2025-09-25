@@ -1,32 +1,47 @@
 // src/components/water-tracker-card.tsx
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './ui/card';
 import { Button } from './ui/button';
-import { Minus, Plus, GlassWater } from 'lucide-react';
+import { Minus, Plus, GlassWater, Save } from 'lucide-react';
 import { Progress } from './ui/progress';
+import { useState, useEffect } from 'react';
 
 interface WaterTrackerCardProps {
-  waterIntake: number;
+  initialWaterIntake: number;
   waterGoal: number;
-  onWaterUpdate: (newIntake: number) => void;
+  onWaterUpdate: (newIntake: number) => Promise<void>;
 }
 
 const CUP_SIZE = 250; // Tamanho do copo em ml
 
-export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate }: WaterTrackerCardProps) {
-  const progress = waterGoal > 0 ? Math.min((waterIntake / waterGoal) * 100, 100) : 0;
+export default function WaterTrackerCard({ initialWaterIntake, waterGoal, onWaterUpdate }: WaterTrackerCardProps) {
+  const [localIntake, setLocalIntake] = useState(initialWaterIntake);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setLocalIntake(initialWaterIntake);
+  }, [initialWaterIntake]);
+
+  const progress = waterGoal > 0 ? Math.min((localIntake / waterGoal) * 100, 100) : 0;
+  const hasChanges = localIntake !== initialWaterIntake;
 
   const handleAddWater = () => {
-    onWaterUpdate(waterIntake + CUP_SIZE);
+    setLocalIntake(current => current + CUP_SIZE);
   };
 
   const handleRemoveWater = () => {
-    onWaterUpdate(waterIntake - CUP_SIZE);
+    setLocalIntake(current => Math.max(0, current - CUP_SIZE));
   };
 
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    await onWaterUpdate(localIntake);
+    setIsSaving(false);
+  }
+
   return (
-    <Card className="shadow-sm rounded-2xl animate-fade-in">
+    <Card className="shadow-sm rounded-2xl animate-fade-in flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-semibold text-xl">
           <GlassWater className="h-6 w-6 text-primary" />
@@ -34,20 +49,20 @@ export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate
         </CardTitle>
         <CardDescription>Acompanhe seu consumo de água ao longo do dia.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <div className="flex items-center justify-center gap-4 my-4">
           <Button
             variant="outline"
             size="icon"
             className="h-12 w-12 rounded-full"
             onClick={handleRemoveWater}
-            disabled={waterIntake <= 0}
+            disabled={localIntake <= 0 || isSaving}
           >
             <Minus className="h-6 w-6" />
           </Button>
           <div className="text-center">
             <p className="text-4xl font-bold text-foreground">
-              {(waterIntake / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {(localIntake / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               <span className="text-2xl text-muted-foreground">L</span>
             </p>
             <p className="text-sm text-muted-foreground">Meta: {(waterGoal / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}L</p>
@@ -57,6 +72,7 @@ export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate
             size="icon"
             className="h-12 w-12 rounded-full"
             onClick={handleAddWater}
+            disabled={isSaving}
           >
             <Plus className="h-6 w-6" />
           </Button>
@@ -70,6 +86,16 @@ export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate
             </div>
         </div>
       </CardContent>
+      <CardFooter>
+        <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving} className="w-full">
+            {isSaving ? 'Salvando...' : (
+                <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Consumo
+                </>
+            )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

@@ -10,7 +10,7 @@ import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, updateDoc, setDoc, onSnapshot, collection, query, where, getDocs, limit, orderBy, writeBatch } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { differenceInCalendarDays, parseISO, format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday as isTodayFns, parseISO, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import AppLayout from '@/components/app-layout';
@@ -23,7 +23,6 @@ const getLocalDateString = (date = new Date()) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
-
 
 export default function HydrationPage() {
   const [loading, setLoading] = useState(true);
@@ -41,16 +40,21 @@ export default function HydrationPage() {
   }, []);
 
   const handleWaterUpdate = useCallback(async (newWaterIntake: number) => {
-    if (!user || !userProfile) return;
+    if (!user) return;
 
     const updatedIntake = Math.max(0, newWaterIntake);
-    const originalIntake = userProfile.waterIntake;
-
-    setUserProfile(prev => prev ? { ...prev, waterIntake: updatedIntake } : null);
     
     try {
         const userDocRef = doc(db, 'users', user.uid);
         await updateDoc(userDocRef, { waterIntake: updatedIntake });
+
+        setUserProfile(prev => prev ? { ...prev, waterIntake: updatedIntake } : null);
+        
+        toast({
+            title: "Consumo Salvo!",
+            description: "Seu consumo de água foi atualizado com sucesso.",
+        });
+
     } catch (error: any) {
         console.error("Failed to update water intake:", error);
         toast({
@@ -58,22 +62,20 @@ export default function HydrationPage() {
             description: "Não foi possível salvar seu consumo de água.",
             variant: "destructive"
         });
-        setUserProfile(prev => prev ? { ...prev, waterIntake: originalIntake } : null);
     }
-  }, [user, userProfile, toast]);
+  }, [user, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
+      orderBy('date', 'desc'),
       limit(30)
     );
 
     try {
       const querySnapshot = await getDocs(q);
       const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
-      
-      history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       setHydrationHistory(history);
 
@@ -109,7 +111,6 @@ export default function HydrationPage() {
             if (profileData.waterGoal === undefined) updates.waterGoal = 2000;
             if (profileData.hydrationStreak === undefined) updates.hydrationStreak = 0;
 
-
             if (lastLogin && lastLogin !== todayStr) {
                 const yesterdayStr = getLocalDateString(subDays(new Date(), 1));
                 const entryRef = doc(db, 'hydration_entries', `${currentUser.uid}_${yesterdayStr}`);
@@ -133,16 +134,13 @@ export default function HydrationPage() {
                 batch.update(userDocRef, updates);
                 await batch.commit();
 
-                setUserProfile({ ...profileData, ...updates });
+                // setUserProfile({ ...profileData, ...updates });
                 fetchHistory(currentUser.uid); // refetch history
-            } else {
-                 if (Object.keys(updates).length > 0) {
-                    await updateDoc(userDocRef, updates);
-                    setUserProfile({ ...profileData, ...updates });
-                 } else {
-                    setUserProfile(profileData);
-                 }
+            } else if (Object.keys(updates).length > 0) {
+              await updateDoc(userDocRef, updates);
             }
+            
+            setUserProfile(userDoc.data() as UserProfile);
 
           } else { 
              profileData = {
@@ -195,7 +193,7 @@ export default function HydrationPage() {
         let intake = 0;
         let goal = userProfile.waterGoal || 2000;
 
-        if (isToday(day)) {
+        if (isTodayFns(day)) {
              intake = userProfile.waterIntake || 0;
         } else {
              const historyEntry = hydrationHistory.find(h => h.date === dateStr);
@@ -215,7 +213,17 @@ export default function HydrationPage() {
   }, [hydrationHistory, userProfile]);
 
   const summaryStats = useMemo(() => {
-    const last7DaysHistory = hydrationHistory.slice(0, 7);
+    // Include today's data in the calculation
+    const todayStr = getLocalDateString();
+    const recentHistory = hydrationHistory.filter(h => h.date !== todayStr).slice(0, 6);
+
+    const completeHistory = [
+      ...(userProfile ? [{ date: todayStr, intake: userProfile.waterIntake, goal: userProfile.waterGoal }] : []),
+      ...recentHistory
+    ];
+    
+    const last7DaysHistory = completeHistory.slice(0, 7);
+
     const totalIntake = last7DaysHistory.reduce((acc, curr) => acc + curr.intake, 0);
     const daysGoalMet = last7DaysHistory.filter(d => d.intake >= d.goal).length;
     
@@ -223,7 +231,7 @@ export default function HydrationPage() {
         avgIntake: last7DaysHistory.length > 0 ? totalIntake / last7DaysHistory.length : 0,
         goalMetPercentage: last7DaysHistory.length > 0 ? (daysGoalMet / last7DaysHistory.length) * 100 : 0
     };
-  }, [hydrationHistory]);
+  }, [hydrationHistory, userProfile]);
 
   if (loading) {
     return (
@@ -253,7 +261,7 @@ export default function HydrationPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
                  <WaterTrackerCard
-                    waterIntake={userProfile.waterIntake}
+                    initialWaterIntake={userProfile.waterIntake}
                     waterGoal={userProfile.waterGoal}
                     onWaterUpdate={handleWaterUpdate}
                 />
