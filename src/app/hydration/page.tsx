@@ -63,16 +63,22 @@ export default function HydrationPage() {
   }, [user, userProfile, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
+    // Consulta simplificada para evitar a necessidade de um índice composto complexo.
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      orderBy('date', 'desc'),
-      limit(7)
+      limit(30) // Busca um pouco mais para garantir que tenhamos os 7 dias mais recentes
     );
 
     const querySnapshot = await getDocs(q);
-    const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry).reverse();
-    setHydrationHistory(history);
+    const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
+    
+    // Ordena os resultados no cliente e pega os últimos 7
+    const sortedHistory = history
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(-7);
+
+    setHydrationHistory(sortedHistory);
   }, []);
 
 
