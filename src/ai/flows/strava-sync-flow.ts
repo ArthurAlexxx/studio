@@ -54,11 +54,17 @@ const stravaSyncFlow = ai.defineFlow(
       }
       
       const responseData = await response.json();
-      // The actual array of activities is inside the 'body' property of the webhook response.
-      const activitiesData: StravaActivity[] = responseData.body;
+      
+      // The 'body' may be a JSON string, so we need to parse it.
+      let activitiesData: StravaActivity[];
+      if (typeof responseData.body === 'string') {
+        activitiesData = JSON.parse(responseData.body);
+      } else {
+        activitiesData = responseData.body;
+      }
       
       if (!Array.isArray(activitiesData)) {
-          console.error('Webhook response body is not an array:', activitiesData);
+          console.error('Webhook response body is not an array after parsing:', activitiesData);
           throw new Error('Webhook response is not in the expected format (array in body).');
       }
 
