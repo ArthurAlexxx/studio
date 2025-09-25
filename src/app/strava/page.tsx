@@ -43,7 +43,6 @@ export default function StravaPage() {
           router.push('/login');
         });
         
-        // Mantemos a leitura do banco de dados para exibir atividades já salvas.
         const activitiesQuery = query(collection(db, 'users', currentUser.uid, 'strava_activities'));
         const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
             const loadedActivities = snapshot.docs.map(d => d.data() as StravaActivity);
@@ -82,14 +81,21 @@ export default function StravaPage() {
 
   const handleSync = async () => {
     if (!user) {
-        toast({ title: "Usuário não encontrado", variant: 'destructive' });
+        toast({ title: "Usuário não autenticado", variant: 'destructive' });
         return;
     }
     setSyncing(true);
     try {
-      const result = await stravaSync();
+      const result = await stravaSync(user.uid);
       
-      alert('Atividades recebidas: \n' + JSON.stringify(result, null, 2));
+      if (result.success) {
+        toast({
+            title: 'Sincronização Concluída!',
+            description: `${result.syncedCount} atividades foram salvas com sucesso.`,
+        });
+      } else {
+        throw new Error('A sincronização falhou no servidor.');
+      }
 
     } catch (error: any) {
       console.error("Strava sync error:", error);
