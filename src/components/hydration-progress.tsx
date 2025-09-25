@@ -1,12 +1,11 @@
 // src/components/hydration-progress.tsx
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { type ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { type ChartConfig, ChartContainer } from '@/components/ui/chart';
+import { Flame, Target, Trophy } from 'lucide-react';
 
 interface HydrationProgressProps {
   weeklyData: {
@@ -15,6 +14,9 @@ interface HydrationProgressProps {
     intake: number;
     goal: number;
   }[];
+  averageIntake: number;
+  goalMetPercentage: number;
+  streak: number;
 }
 
 const chartConfig = {
@@ -30,53 +32,66 @@ const chartConfig = {
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
     return (
-      <div className="rounded-lg border bg-background p-2 shadow-sm">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex flex-col space-y-1">
-            <span className="text-[0.70rem] uppercase text-muted-foreground">
-              {label}
-            </span>
-            <span className="font-bold text-muted-foreground">
-              {(payload[0].value / 1000).toFixed(2)}L
-            </span>
-          </div>
-        </div>
+      <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
+        <p className="font-bold mb-1">{label}</p>
+        <p>Consumido: <span className="font-semibold text-primary">{(data.intake / 1000).toFixed(2)}L</span></p>
+        <p>Meta: <span className="font-semibold">{(data.goal / 1000).toFixed(2)}L</span></p>
       </div>
     );
   }
   return null;
 };
 
-export default function HydrationProgress({ weeklyData }: HydrationProgressProps) {
+const StatCard = ({ icon: Icon, title, value, unit, color }: { icon: React.ElementType, title: string, value: string, unit: string, color: string }) => (
+    <div className="flex items-center gap-4 rounded-xl border p-4 bg-secondary/30">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${color}`}>
+            <Icon className="h-6 w-6 text-white" />
+        </div>
+        <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold">
+                {value}
+                <span className="text-base font-normal text-muted-foreground ml-1">{unit}</span>
+            </p>
+        </div>
+    </div>
+);
+
+export default function HydrationProgress({ weeklyData, averageIntake, goalMetPercentage, streak }: HydrationProgressProps) {
   const chartData = weeklyData.map(d => ({ ...d, day: d.day.slice(0, 3) }));
 
   return (
     <Card className="shadow-sm rounded-2xl animate-fade-in-down" style={{ animationDelay: '200ms' }}>
       <CardHeader>
-        <CardTitle className="font-semibold text-xl">Seu Progresso</CardTitle>
+        <CardTitle className="font-semibold text-xl">Seu Progresso Semanal</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Weekly Circles Progress */}
-        <div className="flex justify-around">
-          {weeklyData.map((dayData, index) => {
-            const goalMet = dayData.intake >= dayData.goal;
-            return (
-              <div key={index} className="flex flex-col items-center gap-2 text-center">
-                {goalMet && <div className="h-2 w-2 rounded-full bg-blue-500"></div>}
-                {!goalMet && <div className="h-2 w-2 rounded-full bg-transparent"></div>}
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold",
-                    goalMet ? "border-blue-500 bg-blue-500/10 text-blue-600" : "border-border text-muted-foreground"
-                  )}
-                >
-                  {format(dayData.date, 'dd')}
-                </div>
-                <p className="text-xs font-medium text-muted-foreground">{format(dayData.date, 'E')}</p>
-              </div>
-            );
-          })}
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             <StatCard
+                icon={Flame}
+                title="Média Diária"
+                value={(averageIntake / 1000).toFixed(2)}
+                unit="L"
+                color="bg-sky-500"
+            />
+            <StatCard
+                icon={Target}
+                title="Consistência"
+                value={goalMetPercentage.toFixed(0)}
+                unit="%"
+                color="bg-green-500"
+            />
+            <StatCard
+                icon={Trophy}
+                title="Sequência"
+                value={streak.toString()}
+                unit={streak === 1 ? 'dia' : 'dias'}
+                color="bg-amber-500"
+            />
         </div>
 
         {/* Chart Section */}

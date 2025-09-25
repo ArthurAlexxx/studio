@@ -63,21 +63,19 @@ export default function HydrationPage() {
   }, [user, userProfile, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
-    // Simplificando a query para evitar a necessidade de um índice composto
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      limit(30) // Busca um pouco mais para garantir que temos os 7 dias, mesmo com dias faltando
+      limit(30)
     );
 
     try {
       const querySnapshot = await getDocs(q);
       const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
       
-      // Ordenando os dados no lado do cliente
       history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      setHydrationHistory(history.slice(0, 7)); // Pegando os 7 mais recentes
+      setHydrationHistory(history);
 
     } catch(e) {
       console.error(e);
@@ -109,6 +107,8 @@ export default function HydrationPage() {
 
             if (profileData.waterIntake === undefined) updates.waterIntake = 0;
             if (profileData.waterGoal === undefined) updates.waterGoal = 2000;
+            if (profileData.hydrationStreak === undefined) updates.hydrationStreak = 0;
+
 
             if (lastLogin && lastLogin !== todayStr) {
                 const yesterdayStr = getLocalDateString(subDays(new Date(), 1));
@@ -123,10 +123,10 @@ export default function HydrationPage() {
                 });
 
                 updates.waterIntake = 0; 
-                if (differenceInCalendarDays(new Date(), parseISO(lastLogin)) === 1) {
-                    updates.currentStreak = (profileData.currentStreak || 0) + 1;
-                } else { 
-                    updates.currentStreak = 1;
+                if (profileData.waterIntake >= profileData.waterGoal) {
+                   updates.hydrationStreak = (profileData.hydrationStreak || 0) + 1;
+                } else {
+                   updates.hydrationStreak = 0;
                 }
                 updates.lastLoginDate = todayStr;
 
@@ -149,6 +149,7 @@ export default function HydrationPage() {
               fullName: currentUser.displayName || 'Usuário',
               email: currentUser.email || '',
               currentStreak: 1,
+              hydrationStreak: 0,
               lastLoginDate: getLocalDateString(),
               calorieGoal: 2000,
               proteinGoal: 140,
@@ -213,6 +214,17 @@ export default function HydrationPage() {
     });
   }, [hydrationHistory, userProfile]);
 
+  const summaryStats = useMemo(() => {
+    const last7DaysHistory = hydrationHistory.slice(0, 7);
+    const totalIntake = last7DaysHistory.reduce((acc, curr) => acc + curr.intake, 0);
+    const daysGoalMet = last7DaysHistory.filter(d => d.intake >= d.goal).length;
+    
+    return {
+        avgIntake: last7DaysHistory.length > 0 ? totalIntake / last7DaysHistory.length : 0,
+        goalMetPercentage: last7DaysHistory.length > 0 ? (daysGoalMet / last7DaysHistory.length) * 100 : 0
+    };
+  }, [hydrationHistory]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-gray-50 items-center justify-center">
@@ -247,7 +259,12 @@ export default function HydrationPage() {
                 />
             </div>
             <div className="lg:col-span-2">
-                 <HydrationProgress weeklyData={weeklyChartData} />
+                 <HydrationProgress
+                    weeklyData={weeklyChartData}
+                    averageIntake={summaryStats.avgIntake}
+                    goalMetPercentage={summaryStats.goalMetPercentage}
+                    streak={userProfile.hydrationStreak || 0}
+                 />
             </div>
         </div>
       </div>
