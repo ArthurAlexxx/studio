@@ -71,22 +71,17 @@ const flow = ai.defineFlow(
       }
       
       const responseData = await response.json();
-
-      if (responseData && responseData.length > 0 && typeof responseData[0].output === 'string' && responseData[0].output.trim() !== '') {
-        let recipeString = responseData[0].output;
-
-        if (recipeString.startsWith('```json')) {
-          recipeString = recipeString.substring(7, recipeString.length - 3).trim();
-        }
-
-        const recipeJson = JSON.parse(recipeString);
-        return RecipeSchema.parse(recipeJson); // Validate the response against the schema
-      } else {
-        throw new Error("The webhook response was not in the expected format.");
-      }
+      
+      // Validate the direct JSON response against the schema
+      const recipe = RecipeSchema.parse(responseData);
+      return recipe;
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
+      if (error instanceof z.ZodError) {
+          console.error("Zod validation errors:", error.errors);
+          throw new Error("The webhook response was not in the expected format.");
+      }
       throw new Error(`Failed to process recipe from webhook: ${error.message}`);
     }
   }
