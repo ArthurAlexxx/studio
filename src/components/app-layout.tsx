@@ -48,6 +48,7 @@ const NavLink = ({ href, label, icon: Icon, pathname }: { href: string; label: s
 export default function AppLayout({ user, userProfile, onMealAdded, onProfileUpdate, children }: AppLayoutProps) {
   const pathname = usePathname();
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const showAddMealButton = pathname === '/dashboard';
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
@@ -116,6 +117,7 @@ export default function AppLayout({ user, userProfile, onMealAdded, onProfileUpd
                 user={user}
                 userProfile={userProfile}
                 onProfileUpdate={onProfileUpdate}
+                showAddMealButton={showAddMealButton}
             />
         </header>
         <main className="flex flex-1 flex-col gap-4 bg-muted/40">

@@ -18,9 +18,10 @@ interface DashboardHeaderProps {
   user: User | null;
   userProfile: UserProfile | null;
   onProfileUpdate: (updatedProfile: Partial<UserProfile>) => void;
+  showAddMealButton?: boolean;
 }
 
-export default function DashboardHeader({ onMealAdded, user, userProfile, onProfileUpdate }: DashboardHeaderProps) {
+export default function DashboardHeader({ onMealAdded, user, userProfile, onProfileUpdate, showAddMealButton = false }: DashboardHeaderProps) {
   const router = useRouter();
   const [isAddMealModalOpen, setAddMealModalOpen] = useState(false);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -40,13 +41,17 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
   return (
     <>
       <div className="flex items-center gap-4">
-        <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm hidden sm:flex">
-          <Plus className="mr-2 h-4 w-4" />
-          Adicionar Refeição
-        </Button>
-         <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} size="icon" className="shadow-sm flex sm:hidden">
-          <Plus className="h-5 w-5" />
-        </Button>
+        {showAddMealButton && (
+           <>
+            <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm hidden sm:flex">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Refeição
+            </Button>
+             <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} size="icon" className="shadow-sm flex sm:hidden">
+              <Plus className="h-5 w-5" />
+            </Button>
+           </>
+        )}
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
