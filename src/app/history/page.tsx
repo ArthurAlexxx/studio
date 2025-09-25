@@ -1,11 +1,11 @@
 // src/app/history/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, orderBy, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDocs, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import ConsumedFoodsList from '@/components/consumed-foods-list';
@@ -17,6 +17,8 @@ import { auth, db } from '@/lib/firebase/client';
 import SummaryCards from '@/components/summary-cards';
 import AppLayout from '@/components/app-layout';
 import WaterIntakeSummary from '@/components/water-intake-summary';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MonthPicker } from '@/components/ui/month-picker';
 
 import type { MealEntry } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
@@ -27,9 +29,11 @@ const getLocalDateString = (date = new Date()) => {
 }
 
 export default function HistoryPage() {
+  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
-  const [hydrationEntry, setHydrationEntry] = useState<HydrationEntry | null>(null);
+  const [hydrationEntries, setHydrationEntries] = useState<HydrationEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -68,99 +72,156 @@ export default function HistoryPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!user || !selectedDate) {
+    if (!user) {
       setMealEntries([]);
-      setHydrationEntry(null);
+      setHydrationEntries([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const formattedDate = getLocalDateString(selectedDate);
-    let mealsLoaded = false;
-    let hydrationLoaded = false;
 
-    const checkLoadingDone = () => {
-        if (mealsLoaded && hydrationLoaded) {
+    const fetchDayData = () => {
+        if (!selectedDate) {
             setLoading(false);
+            return;
         }
+        const formattedDate = getLocalDateString(selectedDate);
+        let mealsLoaded = false;
+        let hydrationLoaded = false;
+
+        const checkLoadingDone = () => {
+            if (mealsLoaded && hydrationLoaded) {
+                setLoading(false);
+            }
+        }
+
+        // Fetch Meals for the day
+        const mealsQuery = query(
+            collection(db, "meal_entries"),
+            where("userId", "==", user.uid),
+            where("date", "==", formattedDate)
+        );
+
+        const unsubscribeMeals = onSnapshot(mealsQuery, (querySnapshot) => {
+            const loadedEntries = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...(doc.data() as Omit<MealEntry, 'id'>)
+            }));
+            loadedEntries.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+            setMealEntries(loadedEntries);
+            mealsLoaded = true;
+            checkLoadingDone();
+        }, (error) => {
+            console.error("Error fetching daily meals:", error);
+            mealsLoaded = true;
+            checkLoadingDone();
+        });
+
+        // Fetch Hydration for the day
+        const hydrationDocId = `${user.uid}_${formattedDate}`;
+        const hydrationDocRef = doc(db, 'hydration_entries', hydrationDocId);
+        const unsubscribeHydration = onSnapshot(hydrationDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setHydrationEntries([{ id: docSnap.id, ...docSnap.data() } as HydrationEntry]);
+            } else {
+                setHydrationEntries([]);
+            }
+            hydrationLoaded = true;
+            checkLoadingDone();
+        }, (error) => {
+            console.error("Error fetching daily hydration:", error);
+            hydrationLoaded = true;
+            checkLoadingDone();
+        });
+        
+        return () => {
+            unsubscribeMeals();
+            unsubscribeHydration();
+        };
+    };
+
+    const fetchMonthData = async () => {
+        const start = startOfMonth(selectedMonth);
+        const end = endOfMonth(selectedMonth);
+        const startDateString = getLocalDateString(start);
+        const endDateString = getLocalDateString(end);
+
+        // Fetch Meals for the month
+        const mealsQuery = query(
+            collection(db, "meal_entries"),
+            where("userId", "==", user.uid),
+            where("date", ">=", startDateString),
+            where("date", "<=", endDateString)
+        );
+        const mealDocs = await getDocs(mealsQuery);
+        const meals = mealDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry));
+        setMealEntries(meals);
+
+        // Fetch Hydration for the month
+        const hydrationQuery = query(
+            collection(db, 'hydration_entries'),
+            where("userId", "==", user.uid),
+            where("date", ">=", startDateString),
+            where("date", "<=", endDateString)
+        );
+        const hydrationDocs = await getDocs(hydrationQuery);
+        const hydration = hydrationDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+        setHydrationEntries(hydration);
+        
+        setLoading(false);
+    };
+
+    let unsubscribe: (() => void) | undefined;
+    if (viewMode === 'day') {
+        unsubscribe = fetchDayData();
+    } else {
+        fetchMonthData().catch(err => {
+            console.error("Error fetching month data:", err);
+            setLoading(false);
+            toast({
+                title: "Erro ao carregar dados do mês",
+                description: "Não foi possível buscar os dados para o mês selecionado.",
+                variant: "destructive"
+            });
+        });
     }
 
-    // Fetch Meals
-    const mealsQuery = query(
-      collection(db, "meal_entries"),
-      where("userId", "==", user.uid),
-      where("date", "==", formattedDate)
-    );
-
-    const unsubscribeMeals = onSnapshot(mealsQuery, (querySnapshot) => {
-      const loadedEntries = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as Omit<MealEntry, 'id'>)
-      }));
-      // Sort entries by createdAt timestamp client-side
-      loadedEntries.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis() || 0;
-        const timeB = b.createdAt?.toMillis() || 0;
-        return timeA - timeB;
-      });
-      setMealEntries(loadedEntries);
-      mealsLoaded = true;
-      checkLoadingDone();
-    }, (error) => {
-      console.error("Error fetching historical meals:", error);
-      toast({
-        title: "Erro ao carregar refeições",
-        description: "Não foi possível buscar as refeições para a data selecionada.",
-        variant: "destructive"
-      });
-      mealsLoaded = true;
-      checkLoadingDone();
-    });
-
-    // Fetch Hydration for the selected date
-    const hydrationDocId = `${user.uid}_${formattedDate}`;
-    const hydrationDocRef = doc(db, 'hydration_entries', hydrationDocId);
-    
-    getDoc(hydrationDocRef).then(docSnap => {
-         if (docSnap.exists()) {
-            setHydrationEntry({ id: docSnap.id, ...docSnap.data() } as HydrationEntry);
-        } else {
-            setHydrationEntry(null);
-        }
-        hydrationLoaded = true;
-        checkLoadingDone();
-    }).catch(error => {
-        console.error("Error fetching hydration entry:", error);
-        setHydrationEntry(null); // Ensure it's null on error
-        hydrationLoaded = true;
-        checkLoadingDone();
-    });
-
-
     return () => {
-        unsubscribeMeals();
+        if (unsubscribe) unsubscribe();
     };
-  }, [user, selectedDate, toast]);
-  
+
+  }, [user, selectedDate, selectedMonth, viewMode, toast]);
+
   const handleMealDeleted = () => {
-    // A atualização já é feita em tempo real pelo onSnapshot
     toast({
         title: "Refeição Removida",
         description: "A refeição foi removida com sucesso."
     });
   }
 
-  const dailyTotals = mealEntries.reduce(
-    (acc, entry) => {
-      acc.calorias += entry.mealData.totais.calorias;
-      acc.proteinas += entry.mealData.totais.proteinas;
-      acc.carboidratos += entry.mealData.totais.carboidratos;
-      acc.gorduras += entry.mealData.totais.gorduras;
-      return acc;
-    },
-    { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
-  );
+  const { dailyTotals, monthlyTotals } = useMemo(() => {
+    const daily = mealEntries.reduce(
+        (acc, entry) => {
+            acc.calorias += entry.mealData.totais.calorias;
+            acc.proteinas += entry.mealData.totais.proteinas;
+            acc.carboidratos += entry.mealData.totais.carboidratos;
+            acc.gorduras += entry.mealData.totais.gorduras;
+            return acc;
+        },
+        { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
+    );
+    const monthly = viewMode === 'month' ? daily : { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 };
+    return { dailyTotals: daily, monthlyTotals: monthly };
+  }, [mealEntries, viewMode]);
+
+  const dailyHydration = hydrationEntries.length > 0 ? hydrationEntries[0] : null;
+  
+  const monthlyHydrationTotal = useMemo(() => {
+    if (viewMode !== 'month') return 0;
+    return hydrationEntries.reduce((acc, entry) => acc + entry.intake, 0);
+  }, [hydrationEntries, viewMode]);
+
 
   if (!user || !userProfile) {
     return (
@@ -183,10 +244,19 @@ export default function HistoryPage() {
                 <h2 className="text-2xl font-bold text-foreground">Histórico Nutricional</h2>
                 <p className="text-muted-foreground">Selecione uma data para ver o detalhe de suas refeições e o resumo nutricional do dia.</p>
             </div>
+
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'day' | 'month')} className="w-full mb-8">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="day">Diário</TabsTrigger>
+                    <TabsTrigger value="month">Mensal</TabsTrigger>
+                </TabsList>
+            </Tabs>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-1">
                     <Card className="shadow-sm rounded-2xl">
-                            <CardContent className="p-2">
+                        <CardContent className="p-2">
+                             {viewMode === 'day' ? (
                                 <Calendar
                                     mode="single"
                                     selected={selectedDate}
@@ -195,7 +265,13 @@ export default function HistoryPage() {
                                     locale={ptBR}
                                     disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
                                 />
-                            </CardContent>
+                            ) : (
+                               <MonthPicker
+                                    month={selectedMonth}
+                                    setMonth={setSelectedMonth}
+                               />
+                            )}
+                        </CardContent>
                     </Card>
                 </div>
                 <div className="lg:col-span-2 space-y-8">
@@ -208,21 +284,32 @@ export default function HistoryPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="md:col-span-2">
                                 <SummaryCards
-                                    totalNutrients={dailyTotals}
-                                    calorieGoal={userProfile.calorieGoal}
-                                    proteinGoal={userProfile.proteinGoal}
+                                    totalNutrients={viewMode === 'day' ? dailyTotals : monthlyTotals}
+                                    calorieGoal={viewMode === 'day' ? userProfile.calorieGoal : userProfile.calorieGoal * 30}
+                                    proteinGoal={viewMode === 'day' ? userProfile.proteinGoal : userProfile.proteinGoal * 30}
                                     hideStreak={true}
                                 />
                            </div>
                            <div className="md:col-span-2">
-                                <WaterIntakeSummary hydrationEntry={hydrationEntry} />
+                                <WaterIntakeSummary 
+                                    hydrationEntry={viewMode === 'day' ? dailyHydration : null}
+                                    monthlyTotal={viewMode === 'month' ? monthlyHydrationTotal : undefined}
+                                    monthlyGoal={viewMode === 'month' ? userProfile.waterGoal * 30 : undefined}
+                                />
                            </div>
                         </div>
-                        <ConsumedFoodsList 
-                            mealEntries={mealEntries} 
-                            onMealDeleted={handleMealDeleted}
-                            showTotals={false}
-                        />
+                        {viewMode === 'day' && (
+                            <ConsumedFoodsList 
+                                mealEntries={mealEntries} 
+                                onMealDeleted={handleMealDeleted}
+                                showTotals={false}
+                            />
+                        )}
+                         {viewMode === 'month' && mealEntries.length === 0 && hydrationEntries.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-40 text-center rounded-xl bg-secondary/50">
+                                <p className="text-base font-medium text-muted-foreground">Nenhum dado encontrado para este mês.</p>
+                            </div>
+                         )}
                     </>
                 )}
                 </div>
