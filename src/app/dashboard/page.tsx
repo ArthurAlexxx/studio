@@ -17,6 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import AppLayout from '@/components/app-layout';
 import WaterTrackerCard from '@/components/water-tracker-card';
+import ChartsSection from '@/components/charts-section';
 
 // Função para obter data local no formato YYYY-MM-DD
 const getLocalDateString = (date = new Date()) => {
@@ -144,7 +145,7 @@ export default function DashboardPage() {
                         return newHistory;
                     }
                     // Sort is handled by the weekly query now
-                    return [...prevHistory, data].sort((a, b) => b.date.localeCompare(a.date));
+                    return [...prevHistory, data].sort((a, b) => a.date.localeCompare(b.date));
                 });
 
             } else {
@@ -159,7 +160,7 @@ export default function DashboardPage() {
                 setDoc(todayDocRef, newEntry).then(() => {
                     const newHydrationEntry = { id: todayDocId, ...newEntry };
                     setTodayHydration(newHydrationEntry);
-                     setHydrationHistory(prev => [...prev, newHydrationEntry].sort((a, b) => b.date.localeCompare(a.date)));
+                     setHydrationHistory(prev => [...prev, newHydrationEntry].sort((a, b) => a.date.localeCompare(b.date)));
                 });
             }
         }, (error) => {
@@ -177,7 +178,7 @@ export default function DashboardPage() {
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
           const weeklyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
           // Sort manually on the client-side to avoid complex indexes
-          weeklyData.sort((a, b) => b.date.localeCompare(a.date));
+          weeklyData.sort((a, b) => a.date.localeCompare(b.date));
           setHydrationHistory(weeklyData);
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
         }, (error) => {
@@ -215,6 +216,46 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }, [isProfileLoaded, areMealsLoaded, isHydrationLoaded]);
+
+   // Data preparation for charts
+   const mealsToday = mealEntries.map(entry => entry.mealData);
+   const totalNutrients = mealsToday.reduce(
+        (acc, meal) => {
+            acc.calorias += meal.totais.calorias;
+            acc.proteinas += meal.totais.proteinas;
+            acc.carboidratos += meal.totais.carboidratos;
+            acc.gorduras += meal.totais.gorduras;
+            return acc;
+        },
+        { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
+    );
+    const macrosData = [
+        { name: 'Proteínas', value: totalNutrients.proteinas, fill: 'hsl(var(--chart-1))' },
+        { name: 'Carboidratos', value: totalNutrients.carboidratos, fill: 'hsl(var(--chart-3))' },
+        { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-2))' },
+    ];
+    
+    const today = new Date();
+    const weekStart = startOfWeek(today, { locale: ptBR });
+    const weekEnd = endOfWeek(today, { locale: ptBR });
+    const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    
+    const weeklyCaloriesData = daysOfWeek.map(day => {
+        const isToday = isSameDay(day, today);
+        // This is a placeholder as we don't fetch historical meal data on this page
+        return {
+            day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
+            calories: isToday ? Math.round(totalNutrients.calorias) : 0, 
+        };
+    });
+    
+    const weeklyHydrationData = daysOfWeek.map(day => {
+        const entry = hydrationHistory.find(h => isSameDay(parseISO(h.date), day));
+        return {
+            day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
+            intake: entry ? entry.intake : 0,
+        };
+    });
   
   const initialLoading = loading || !user || !userProfile || !todayHydration;
 
@@ -231,8 +272,6 @@ export default function DashboardPage() {
     return null;
   }
   
-  const mealsToday = mealEntries.map(entry => entry.mealData);
-
   return (
     <AppLayout
         user={user}
@@ -244,7 +283,6 @@ export default function DashboardPage() {
             <DashboardMetrics 
                 meals={mealsToday}
                 userProfile={userProfile}
-                hydrationHistory={hydrationHistory}
             />
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
@@ -261,6 +299,14 @@ export default function DashboardPage() {
                         onWaterUpdate={handleWaterUpdate}
                     />
                 </div>
+            </div>
+
+            <div className="mt-8">
+              <ChartsSection
+                macrosData={macrosData}
+                weeklyCaloriesData={weeklyCaloriesData}
+                weeklyHydrationData={weeklyHydrationData}
+              />
             </div>
         </div>
     </AppLayout>

@@ -15,7 +15,7 @@ interface ChartsSectionProps {
  */
 export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHydrationData }: ChartsSectionProps) {
   return (
-    <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="lg:col-span-1 shadow-sm rounded-2xl">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-semibold text-lg">
@@ -31,18 +31,6 @@ export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHy
         <Card className="lg:col-span-1 shadow-sm rounded-2xl">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-semibold text-lg">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Calorias da Semana
-                </CardTitle>
-                <CardDescription>Consumo de calorias nos últimos 7 dias.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <DashboardCharts chartType="calories" data={weeklyCaloriesData} />
-            </CardContent>
-        </Card>
-         <Card className="lg:col-span-1 shadow-sm rounded-2xl">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-semibold text-lg">
                     <GlassWater className="h-5 w-5 text-primary" />
                     Hidratação Semanal
                 </CardTitle>
@@ -50,6 +38,18 @@ export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHy
             </CardHeader>
             <CardContent>
                 <DashboardCharts chartType="hydration" data={weeklyHydrationData} />
+            </CardContent>
+        </Card>
+        <Card className="lg:col-span-2 shadow-sm rounded-2xl">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-semibold text-lg">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Calorias da Semana
+                </CardTitle>
+                <CardDescription>Consumo de calorias nos últimos 7 dias.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <DashboardCharts chartType="calories" data={weeklyCaloriesData} />
             </CardContent>
         </Card>
     </div>

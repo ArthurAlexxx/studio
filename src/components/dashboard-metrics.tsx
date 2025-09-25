@@ -1,24 +1,19 @@
 // src/components/dashboard-metrics.tsx
 import type { MealData } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
-import type { HydrationEntry } from '@/types/hydration';
 import SummaryCards from './summary-cards';
-import ChartsSection from './charts-section';
-import { eachDayOfInterval, startOfWeek, endOfWeek, format, isSameDay, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface DashboardMetricsProps {
   meals: MealData[];
   userProfile: UserProfile | null;
-  hydrationHistory: HydrationEntry[];
 }
 
 /**
  * @fileoverview Componente para calcular e distribuir as métricas do dashboard.
  * Ele centraliza a lógica de cálculo dos totais de nutrientes e prepara os dados
- * para os componentes de visualização (cards e gráficos).
+ * para os componentes de visualização (cards).
  */
-export default function DashboardMetrics({ meals, userProfile, hydrationHistory }: DashboardMetricsProps) {
+export default function DashboardMetrics({ meals, userProfile }: DashboardMetricsProps) {
   // Calcula os totais de nutrientes a partir da lista de refeições.
   const totalNutrients = meals.reduce(
     (acc, meal) => {
@@ -34,35 +29,6 @@ export default function DashboardMetrics({ meals, userProfile, hydrationHistory 
   // Metas diárias do perfil do usuário, com fallback.
   const calorieGoal = userProfile?.calorieGoal || 2000;
   const proteinGoal = userProfile?.proteinGoal || 140;
-
-  // Prepara os dados para os gráficos.
-  const macrosData = [
-    { name: 'Proteínas', value: totalNutrients.proteinas, fill: 'hsl(var(--chart-1))' },
-    { name: 'Carboidratos', value: totalNutrients.carboidratos, fill: 'hsl(var(--chart-3))' },
-    { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-2))' },
-  ];
-
-  // Gera os dados para os gráficos de evolução semanal usando date-fns.
-  const today = new Date();
-  const weekStart = startOfWeek(today, { locale: ptBR });
-  const weekEnd = endOfWeek(today, { locale: ptBR });
-  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-
-  const weeklyCaloriesData = daysOfWeek.map(day => {
-    const isToday = isSameDay(day, today);
-    return {
-      day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
-      calories: isToday ? Math.round(totalNutrients.calorias) : 0, // Mock: No momento só temos dados de hoje
-    };
-  });
-  
-  const weeklyHydrationData = daysOfWeek.map(day => {
-    const entry = hydrationHistory.find(h => isSameDay(parseISO(h.date), day));
-    return {
-      day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
-      intake: entry ? entry.intake : 0,
-    };
-  });
   
   return (
     <>
@@ -77,13 +43,6 @@ export default function DashboardMetrics({ meals, userProfile, hydrationHistory 
         calorieGoal={calorieGoal}
         proteinGoal={proteinGoal}
         currentStreak={userProfile?.currentStreak || 0}
-      />
-
-      {/* Componente para a seção de gráficos */}
-      <ChartsSection
-        macrosData={macrosData}
-        weeklyCaloriesData={weeklyCaloriesData}
-        weeklyHydrationData={weeklyHydrationData}
       />
     </>
   );
