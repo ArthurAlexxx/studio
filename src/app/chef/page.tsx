@@ -68,7 +68,7 @@ export default function ChefPage() {
       if (response.ok) {
         const responseData = await response.json();
         
-        if (responseData && responseData.length > 0 && responseData[0].output) {
+        if (responseData && responseData.length > 0 && typeof responseData[0].output === 'string' && responseData[0].output.trim() !== '') {
             // Extrai a string JSON de dentro do campo 'output'
             let recipeString = responseData[0].output;
 
