@@ -63,22 +63,26 @@ export default function HydrationPage() {
   }, [user, userProfile, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
-    const today = new Date();
-    const weekStart = startOfWeek(today, { locale: ptBR });
-    const startDate = format(subDays(weekStart, 1), 'yyyy-MM-dd'); // Um dia antes para pegar a semana toda
-
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      where('date', '>=', startDate),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
+      limit(7)
     );
 
-    const querySnapshot = await getDocs(q);
-    const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
-
-    setHydrationHistory(history);
-  }, []);
+    try {
+      const querySnapshot = await getDocs(q);
+      const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
+      setHydrationHistory(history);
+    } catch(e) {
+      console.error(e);
+      toast({
+        title: "Erro ao buscar histórico",
+        description: "Não foi possível carregar seu histórico de hidratação.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
 
 
   useEffect(() => {
