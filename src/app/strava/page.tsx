@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -42,6 +43,7 @@ export default function StravaPage() {
           router.push('/login');
         });
         
+        // Mantemos a leitura do banco de dados para exibir atividades já salvas.
         const activitiesQuery = query(collection(db, 'users', currentUser.uid, 'strava_activities'));
         const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
             const loadedActivities = snapshot.docs.map(d => d.data() as StravaActivity);
@@ -85,11 +87,13 @@ export default function StravaPage() {
     }
     setSyncing(true);
     try {
-      const result = await stravaSync({ userId: user.uid });
+      const result = await stravaSync();
+      
+      alert(JSON.stringify(result, null, 2));
 
       toast({
-        title: 'Sincronização Concluída! ✅',
-        description: `Encontramos e salvamos ${result.syncedCount} atividades.`,
+        title: 'Dados Recebidos!',
+        description: `O webhook retornou ${result.length} atividades. Confira o alerta.`,
       });
 
     } catch (error: any) {
