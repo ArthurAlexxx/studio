@@ -144,7 +144,7 @@ export default function DashboardPage() {
                         return newHistory;
                     }
                     // Sort is handled by the weekly query now
-                    return [...prevHistory, data]; 
+                    return [...prevHistory, data].sort((a, b) => b.date.localeCompare(a.date));
                 });
 
             } else {
@@ -159,7 +159,7 @@ export default function DashboardPage() {
                 setDoc(todayDocRef, newEntry).then(() => {
                     const newHydrationEntry = { id: todayDocId, ...newEntry };
                     setTodayHydration(newHydrationEntry);
-                     setHydrationHistory(prev => [...prev, newHydrationEntry]);
+                     setHydrationHistory(prev => [...prev, newHydrationEntry].sort((a, b) => b.date.localeCompare(a.date)));
                 });
             }
         }, (error) => {
@@ -176,7 +176,7 @@ export default function DashboardPage() {
 
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
           const weeklyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-          // Sort manually on the client-side
+          // Sort manually on the client-side to avoid complex indexes
           weeklyData.sort((a, b) => b.date.localeCompare(a.date));
           setHydrationHistory(weeklyData);
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
@@ -184,7 +184,7 @@ export default function DashboardPage() {
           console.error("FirebaseError:", error.message);
           toast({
             title: "Erro ao carregar histórico de hidratação",
-            description: "Verifique se o índice do Firestore foi criado corretamente. Detalhes no console.",
+            description: "Não foi possível carregar os dados de hidratação. Tente mais tarde.",
             variant: "destructive"
           });
           if (!isHydrationLoaded) setIsHydrationLoaded(true);

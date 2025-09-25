@@ -15,7 +15,7 @@ interface ChartsSectionProps {
  */
 export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHydrationData }: ChartsSectionProps) {
   return (
-    <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1 shadow-sm rounded-2xl">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-semibold text-lg">
@@ -40,11 +40,11 @@ export default function ChartsSection({ macrosData, weeklyCaloriesData, weeklyHy
                 <DashboardCharts chartType="calories" data={weeklyCaloriesData} />
             </CardContent>
         </Card>
-         <Card className="lg:col-span-2 shadow-sm rounded-2xl">
+         <Card className="lg:col-span-1 shadow-sm rounded-2xl">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-semibold text-lg">
                     <GlassWater className="h-5 w-5 text-primary" />
-                    Evolução da Hidratação
+                    Hidratação Semanal
                 </CardTitle>
                 <CardDescription>Seu consumo de água nos últimos 7 dias.</CardDescription>
             </CardHeader>
