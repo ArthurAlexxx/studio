@@ -84,6 +84,8 @@ export default function HistoryPage() {
     const fetchDayData = () => {
         if (!selectedDate) {
             setLoading(false);
+            setMealEntries([]);
+            setHydrationEntries([]);
             return;
         }
         const formattedDate = getLocalDateString(selectedDate);
@@ -150,21 +152,23 @@ export default function HistoryPage() {
         // Fetch Meals for the month
         const mealsQuery = query(
             collection(db, "meal_entries"),
-            where("userId", "==", user.uid)
+            where("userId", "==", user.uid),
+            where("date", ">=", startDateString),
+            where("date", "<=", endDateString)
         );
         const mealDocs = await getDocs(mealsQuery);
-        const meals = mealDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry))
-            .filter(entry => entry.date >= startDateString && entry.date <= endDateString);
+        const meals = mealDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as MealEntry));
         setMealEntries(meals);
 
         // Fetch Hydration for the month
         const hydrationQuery = query(
             collection(db, 'hydration_entries'),
-            where("userId", "==", user.uid)
+            where("userId", "==", user.uid),
+            where("date", ">=", startDateString),
+            where("date", "<=", endDateString)
         );
         const hydrationDocs = await getDocs(hydrationQuery);
-        const hydration = hydrationDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry))
-            .filter(entry => entry.date >= startDateString && entry.date <= endDateString);
+        const hydration = hydrationDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
         setHydrationEntries(hydration);
         
         setLoading(false);
@@ -283,8 +287,8 @@ export default function HistoryPage() {
                            <div className="md:col-span-2">
                                 <SummaryCards
                                     totalNutrients={viewMode === 'day' ? dailyTotals : monthlyTotals}
-                                    calorieGoal={viewMode === 'day' ? userProfile.calorieGoal : userProfile.calorieGoal * 30}
-                                    proteinGoal={viewMode === 'day' ? userProfile.proteinGoal : userProfile.proteinGoal * 30}
+                                    calorieGoal={viewMode === 'day' ? (userProfile.calorieGoal) : (userProfile.calorieGoal * 30)}
+                                    proteinGoal={viewMode === 'day' ? (userProfile.proteinGoal) : (userProfile.proteinGoal * 30)}
                                     hideStreak={true}
                                 />
                            </div>
@@ -292,7 +296,7 @@ export default function HistoryPage() {
                                 <WaterIntakeSummary 
                                     hydrationEntry={viewMode === 'day' ? dailyHydration : null}
                                     monthlyTotal={viewMode === 'month' ? monthlyHydrationTotal : undefined}
-                                    monthlyGoal={viewMode === 'month' ? userProfile.waterGoal * 30 : undefined}
+                                    monthlyGoal={viewMode === 'month' ? (userProfile.waterGoal * 30) : undefined}
                                 />
                            </div>
                         </div>
@@ -303,7 +307,7 @@ export default function HistoryPage() {
                                 showTotals={false}
                             />
                         )}
-                         {viewMode === 'month' && mealEntries.length === 0 && hydrationEntries.length === 0 && (
+                         {viewMode === 'month' && mealEntries.length === 0 && hydrationEntries.length === 0 && !loading &&(
                             <div className="flex flex-col items-center justify-center h-40 text-center rounded-xl bg-secondary/50">
                                 <p className="text-base font-medium text-muted-foreground">Nenhum dado encontrado para este mês.</p>
                             </div>

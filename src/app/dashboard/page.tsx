@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,6 +26,7 @@ const getLocalDateString = (date = new Date()) => {
 export default function DashboardPage() {
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
   const [hydrationHistory, setHydrationHistory] = useState<HydrationEntry[]>([]);
+  const [weeklyCalories, setWeeklyCalories] = useState<Record<string, number>>({});
   const [todayHydration, setTodayHydration] = useState<HydrationEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [areMealsLoaded, setAreMealsLoaded] = useState(false);
@@ -123,6 +124,23 @@ export default function DashboardPage() {
             console.error("Error fetching meals in real-time:", error);
             if(!areMealsLoaded) setAreMealsLoaded(true);
         });
+        
+        // Fetch weekly calories
+        const sevenDaysAgo = subDays(new Date(), 6);
+        const weekDates = eachDayOfInterval({ start: sevenDaysAgo, end: new Date() });
+        
+        weekDates.forEach(date => {
+            const dateStr = getLocalDateString(date);
+            const dailyMealsQuery = query(
+                collection(db, "meal_entries"),
+                where("userId", "==", currentUser.uid),
+                where("date", "==", dateStr)
+            );
+            getDocs(dailyMealsQuery).then(snapshot => {
+                const totalCals = snapshot.docs.reduce((sum, doc) => sum + (doc.data().mealData.totais.calorias || 0), 0);
+                setWeeklyCalories(prev => ({ ...prev, [dateStr]: totalCals }));
+            });
+        });
 
         const todayDocId = `${currentUser.uid}_${todayStr}`;
         const todayDocRef = doc(db, 'hydration_entries', todayDocId);
@@ -159,11 +177,11 @@ export default function DashboardPage() {
             console.error("Error fetching today's hydration:", error);
         });
 
-        const sevenDaysAgo = getLocalDateString(subDays(new Date(), 6));
         const weeklyHydrationQuery = query(
           collection(db, 'hydration_entries'),
           where('userId', '==', currentUser.uid),
-          where('date', '>=', sevenDaysAgo)
+          where('date', '>=', getLocalDateString(sevenDaysAgo)),
+          orderBy('date', 'asc')
         );
 
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
@@ -193,6 +211,7 @@ export default function DashboardPage() {
         setUserProfile(null);
         setTodayHydration(null);
         setHydrationHistory([]);
+        setWeeklyCalories({});
         router.push('/login');
       }
     });
@@ -206,17 +225,16 @@ export default function DashboardPage() {
     }
   }, [isProfileLoaded, areMealsLoaded, isHydrationLoaded]);
 
-   const mealsToday = mealEntries.map(entry => entry.mealData);
-   const totalNutrients = useMemo(() => mealsToday.reduce(
+   const totalNutrients = useMemo(() => mealEntries.reduce(
         (acc, meal) => {
-            acc.calorias += meal.totais.calorias;
-            acc.proteinas += meal.totais.proteinas;
-            acc.carboidratos += meal.totais.carboidratos;
-            acc.gorduras += meal.totais.gorduras;
+            acc.calorias += meal.mealData.totais.calorias;
+            acc.proteinas += meal.mealData.totais.proteinas;
+            acc.carboidratos += meal.mealData.totais.carboidratos;
+            acc.gorduras += meal.mealData.totais.gorduras;
             return acc;
         },
         { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
-    ), [mealsToday]);
+    ), [mealEntries]);
     
     const macrosData = useMemo(() => [
         { name: 'Proteínas', value: totalNutrients.proteinas, fill: 'hsl(var(--chart-1))' },
@@ -230,12 +248,12 @@ export default function DashboardPage() {
     const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
     
     const weeklyCaloriesData = useMemo(() => daysOfWeek.map(day => {
-        const isToday = isSameDay(day, today);
+        const dateStr = getLocalDateString(day);
         return {
             day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
-            calories: isToday ? Math.round(totalNutrients.calorias) : 0, 
+            calories: Math.round(weeklyCalories[dateStr] || 0), 
         };
-    }), [daysOfWeek, today, totalNutrients.calorias]);
+    }), [daysOfWeek, weeklyCalories]);
     
     const weeklyHydrationData = useMemo(() => daysOfWeek.map(day => {
         const entry = hydrationHistory.find(h => isSameDay(parseISO(h.date), day));
@@ -249,7 +267,7 @@ export default function DashboardPage() {
 
   if (initialLoading) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-muted/30 items-center justify-center">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40 items-center justify-center">
          <Loader2 className="h-16 w-16 animate-spin text-primary" />
          <p className="mt-4 text-muted-foreground">Verificando sua sessão e carregando dados...</p>
       </div>
@@ -289,13 +307,11 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="mt-8">
-              <ChartsSection
-                macrosData={macrosData}
-                weeklyCaloriesData={weeklyCaloriesData}
-                weeklyHydrationData={weeklyHydrationData}
-              />
-            </div>
+            <ChartsSection
+              macrosData={macrosData}
+              weeklyCaloriesData={weeklyCaloriesData}
+              weeklyHydrationData={weeklyHydrationData}
+            />
         </div>
     </AppLayout>
   );
