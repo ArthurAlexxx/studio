@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, orderBy, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -77,6 +77,14 @@ export default function HistoryPage() {
 
     setLoading(true);
     const formattedDate = getLocalDateString(selectedDate);
+    let mealsLoaded = false;
+    let hydrationLoaded = false;
+
+    const checkLoadingDone = () => {
+        if (mealsLoaded && hydrationLoaded) {
+            setLoading(false);
+        }
+    }
 
     // Fetch Meals
     const mealsQuery = query(
@@ -92,7 +100,8 @@ export default function HistoryPage() {
         ...(doc.data() as Omit<MealEntry, 'id'>)
       }));
       setMealEntries(loadedEntries);
-       if(hydrationEntry !== undefined) setLoading(false);
+      mealsLoaded = true;
+      checkLoadingDone();
     }, (error) => {
       console.error("Error fetching historical meals:", error);
       toast({
@@ -100,29 +109,32 @@ export default function HistoryPage() {
         description: "Não foi possível buscar as refeições para a data selecionada.",
         variant: "destructive"
       });
-       if(hydrationEntry !== undefined) setLoading(false);
+      mealsLoaded = true;
+      checkLoadingDone();
     });
 
     // Fetch Hydration for the selected date
     const hydrationDocId = `${user.uid}_${formattedDate}`;
     const hydrationDocRef = doc(db, 'hydration_entries', hydrationDocId);
     
-    const unsubscribeHydration = onSnapshot(hydrationDocRef, (docSnap) => {
-        if (docSnap.exists()) {
+    getDoc(hydrationDocRef).then(docSnap => {
+         if (docSnap.exists()) {
             setHydrationEntry({ id: docSnap.id, ...docSnap.data() } as HydrationEntry);
         } else {
             setHydrationEntry(null);
         }
-        if (mealEntries !== undefined) setLoading(false);
-    }, (error) => {
+        hydrationLoaded = true;
+        checkLoadingDone();
+    }).catch(error => {
         console.error("Error fetching hydration entry:", error);
         setHydrationEntry(null); // Ensure it's null on error
-        if (mealEntries !== undefined) setLoading(false);
+        hydrationLoaded = true;
+        checkLoadingDone();
     });
+
 
     return () => {
         unsubscribeMeals();
-        unsubscribeHydration();
     };
   }, [user, selectedDate, toast]);
   
@@ -189,13 +201,17 @@ export default function HistoryPage() {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <SummaryCards
-                                totalNutrients={dailyTotals}
-                                calorieGoal={userProfile.calorieGoal}
-                                proteinGoal={userProfile.proteinGoal}
-                                hideStreak={true}
-                            />
-                             <WaterIntakeSummary hydrationEntry={hydrationEntry} />
+                           <div className="md:col-span-2">
+                                <SummaryCards
+                                    totalNutrients={dailyTotals}
+                                    calorieGoal={userProfile.calorieGoal}
+                                    proteinGoal={userProfile.proteinGoal}
+                                    hideStreak={true}
+                                />
+                           </div>
+                           <div className="md:col-span-2">
+                                <WaterIntakeSummary hydrationEntry={hydrationEntry} />
+                           </div>
                         </div>
                         <ConsumedFoodsList 
                             mealEntries={mealEntries} 

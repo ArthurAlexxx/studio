@@ -133,24 +133,17 @@ export default function HydrationPage() {
   
   const weeklyChartData = useMemo(() => {
     if (!userProfile) return [];
-
+  
     const today = new Date();
     const weekStart = startOfWeek(today, { locale: ptBR });
     const days = eachDayOfInterval({ start: weekStart, end: endOfWeek(today, { locale: ptBR }) });
-
+  
     return days.map(day => {
         const dateStr = getLocalDateString(day);
-        
-        let intake = 0;
-        let goal = userProfile.waterGoal || 2000;
-        let isComplete = false;
-
         const historyEntry = hydrationHistory.find(h => h.date === dateStr);
-        if (historyEntry) {
-            intake = historyEntry.intake;
-            goal = historyEntry.goal;
-            isComplete = intake >= goal;
-        }
+        
+        const intake = historyEntry?.intake || 0;
+        const goal = historyEntry?.goal || userProfile.waterGoal || 2000;
         
         return {
             date: day,
@@ -158,7 +151,7 @@ export default function HydrationPage() {
             dayOfMonth: format(day, 'd'),
             intake,
             goal,
-            isComplete,
+            isComplete: intake >= goal,
             isToday: isTodayFns(day)
         }
     });
@@ -167,16 +160,16 @@ export default function HydrationPage() {
   const summaryStats = useMemo(() => {
     if (hydrationHistory.length === 0) return { avgIntake: 0, goalMetPercentage: 0 };
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
     const last7DaysHistory = hydrationHistory.filter(h => {
-        const entryDate = new Date(h.date.replace(/-/g, '/')); // Fix for date parsing
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(today.getDate() - 6);
-        sevenDaysAgo.setHours(0, 0, 0, 0);
+        const entryDate = new Date(h.date.replace(/-/g, '/'));
+        entryDate.setHours(0, 0, 0, 0);
         return entryDate >= sevenDaysAgo && entryDate <= today;
     });
-
 
     const totalIntake = last7DaysHistory.reduce((acc, curr) => acc + curr.intake, 0);
     const daysGoalMet = last7DaysHistory.filter(d => d.intake >= d.goal).length;
@@ -192,49 +185,46 @@ export default function HydrationPage() {
     if (sortedHistory.length === 0) {
       return 0;
     }
-
+  
     let streak = 0;
     let expectedDate = new Date();
     expectedDate.setHours(0, 0, 0, 0);
-    
-    const todayStr = getLocalDateString(expectedDate);
-    const todayEntry = sortedHistory.find(e => e.date === todayStr);
-
-    let startIndex = 0;
-
-    // Se existe um registro para hoje
-    if (todayEntry) {
-        if (todayEntry.intake >= todayEntry.goal) {
+  
+    // Check if today's entry met the goal
+    const todayEntry = sortedHistory.find(e => e.date === getLocalDateString(expectedDate));
+    if (todayEntry && todayEntry.intake >= todayEntry.goal) {
+      streak++;
+    } else if (!todayEntry || todayEntry.intake < todayEntry.goal) {
+      // If today's goal is not met, but yesterday's was, the streak is from yesterday.
+      // So we start checking from yesterday.
+      // If there is no entry for today, the streak is 0 unless we find it from yesterday.
+       if (!todayEntry) {
+          expectedDate.setDate(expectedDate.getDate() -1);
+          const yesterdayEntry = sortedHistory.find(e => e.date === getLocalDateString(expectedDate));
+          if(yesterdayEntry && yesterdayEntry.intake >= yesterdayEntry.goal){
             streak++;
-        }
-        startIndex = sortedHistory.findIndex(e => e.date === todayStr);
-        if (startIndex === -1) startIndex = 0; // fallback
-        else startIndex += 1;
-        
-        expectedDate.setDate(expectedDate.getDate() - 1);
-    } else {
-         // Se não há registro para hoje, a sequência é 0, mas começamos a verificar a partir de ontem
-         expectedDate.setDate(expectedDate.getDate() - 1);
+          } else {
+            return 0;
+          }
+       } else {
+         return 0;
+       }
     }
-
-    for (let i = startIndex; i < sortedHistory.length; i++) {
-        const entry = sortedHistory[i];
-        const expectedDateStr = getLocalDateString(expectedDate);
-        
-        if (entry.date === expectedDateStr) {
-            if (entry.intake >= entry.goal) {
-                streak++;
-                expectedDate.setDate(expectedDate.getDate() - 1);
-            } else {
-                // Streak is broken
-                break;
-            }
-        } else if (new Date(entry.date) < expectedDate) {
-            // Gap in days, streak is broken
-            break;
-        }
+  
+    // Check previous days
+    for (let i = 1; i < sortedHistory.length; i++) {
+      expectedDate.setDate(expectedDate.getDate() - 1);
+      const expectedDateStr = getLocalDateString(expectedDate);
+      const entry = sortedHistory.find(e => e.date === expectedDateStr);
+  
+      if (entry && entry.intake >= entry.goal) {
+        streak++;
+      } else {
+        // Streak is broken
+        break;
+      }
     }
-
+    
     return streak;
   }, [hydrationHistory]);
 

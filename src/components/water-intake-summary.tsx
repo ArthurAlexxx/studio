@@ -9,9 +9,13 @@ interface WaterIntakeSummaryProps {
 }
 
 export default function WaterIntakeSummary({ hydrationEntry }: WaterIntakeSummaryProps) {
+  const intake = hydrationEntry?.intake || 0;
+  const goal = hydrationEntry?.goal || 2000;
+  const progress = goal > 0 ? Math.min((intake / goal) * 100, 100) : 0;
+  
   if (!hydrationEntry) {
     return (
-      <Card className="shadow-sm rounded-2xl animate-fade-in col-span-1 md:col-span-2">
+      <Card className="shadow-sm rounded-2xl animate-fade-in">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Hidratação</CardTitle>
           <GlassWater className="h-5 w-5 text-primary" />
@@ -23,11 +27,8 @@ export default function WaterIntakeSummary({ hydrationEntry }: WaterIntakeSummar
     );
   }
 
-  const { intake, goal } = hydrationEntry;
-  const progress = goal > 0 ? Math.min((intake / goal) * 100, 100) : 0;
-
   return (
-    <Card className="shadow-sm rounded-2xl animate-fade-in col-span-1 md:col-span-2">
+    <Card className="shadow-sm rounded-2xl animate-fade-in">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">Hidratação</CardTitle>
         <GlassWater className="h-5 w-5 text-primary" />

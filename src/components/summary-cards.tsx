@@ -70,7 +70,7 @@ export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal,
   ];
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 ${hideStreak ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-6 col-span-1`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${hideStreak ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
       {summaryCardsData.filter(card => card.isVisible).map((card, index) => (
         <Card key={card.title} className="shadow-sm rounded-2xl animate-fade-in" style={{animationDelay: `${index * 100}ms`}}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
