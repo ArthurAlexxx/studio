@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,10 +18,10 @@ import ConsumedFoodsList from '@/components/consumed-foods-list';
 import AppLayout from '@/components/app-layout';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import ChartsSection from '@/components/charts-section';
-import { Button } from '@/components/ui/button';
 
 const getLocalDateString = (date = new Date()) => {
-    return format(date, 'yyyy-MM-dd');
+    // Retorna a data no formato YYYY-MM-DD para o fuso horário de São Paulo
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(date);
 }
 
 export default function DashboardPage() {
@@ -90,55 +90,6 @@ export default function DashboardPage() {
     }
   }, [user, todayHydration, toast]);
 
-    const moveTodayDataToYesterday = async () => {
-    if (!user) {
-      toast({ title: 'Erro', description: 'Usuário não autenticado.', variant: 'destructive' });
-      return;
-    }
-
-    const todayStr = getLocalDateString(new Date());
-    const yesterdayStr = getLocalDateString(subDays(new Date(), 1));
-
-    const batch = writeBatch(db);
-
-    // Move meal entries
-    const mealsQuery = query(collection(db, 'meal_entries'), where('userId', '==', user.uid), where('date', '==', todayStr));
-    const mealSnapshots = await getDocs(mealsQuery);
-    mealSnapshots.forEach(doc => {
-      batch.update(doc.ref, { date: yesterdayStr });
-    });
-
-    // Move hydration entry
-    const todayHydrationDocRef = doc(db, 'hydration_entries', `${user.uid}_${todayStr}`);
-    const todayHydrationDoc = todayHydration ? { ...todayHydration } : null;
-
-    if (todayHydrationDoc) {
-      const yesterdayHydrationDocRef = doc(db, 'hydration_entries', `${user.uid}_${yesterdayStr}`);
-      const newHydrationData = {
-        userId: user.uid,
-        date: yesterdayStr,
-        intake: todayHydrationDoc.intake,
-        goal: todayHydrationDoc.goal,
-      };
-      batch.set(yesterdayHydrationDocRef, newHydrationData, { merge: true });
-      batch.delete(todayHydrationDocRef);
-    }
-
-    try {
-      await batch.commit();
-      toast({
-        title: 'Dados Movidos!',
-        description: 'Os registros de hoje foram movidos para ontem.',
-      });
-    } catch (error) {
-      console.error('Error moving data:', error);
-      toast({
-        title: 'Erro ao Mover Dados',
-        description: 'Não foi possível completar a operação.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -338,9 +289,6 @@ export default function DashboardPage() {
         onProfileUpdate={handleProfileUpdate}
     >
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <Button onClick={moveTodayDataToYesterday} variant="outline" className="mb-4">
-              Mover Dados de Hoje para Ontem
-            </Button>
             <DashboardMetrics
                 totalNutrients={totalNutrients}
                 userProfile={userProfile}

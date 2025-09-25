@@ -25,7 +25,8 @@ import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 
 const getLocalDateString = (date = new Date()) => {
-    return format(date, 'yyyy-MM-dd');
+    // Retorna a data no formato YYYY-MM-DD para o fuso horário de São Paulo
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(date);
 }
 
 export default function HistoryPage() {
