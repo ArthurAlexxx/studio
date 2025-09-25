@@ -51,33 +51,38 @@ const stravaSyncFlow = ai.defineFlow(
         console.error(`Failed to trigger webhook. Status: ${response.status}. Details: ${errorBody}`);
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
-
-      const activitiesData: { json: any }[] = await response.json();
       
-      if (!Array.isArray(activitiesData)) {
-          console.error('Webhook did not return an array.');
-          return { success: false, syncedCount: 0 };
+      const responseData: { json: any }[] = await response.json();
+      
+      if (!Array.isArray(responseData)) {
+          console.error('Webhook did not return an array. Data:', responseData);
+          throw new Error('Webhook response is not in the expected format (array).');
       }
 
       const batch = db.batch();
       let syncedCount = 0;
 
-      activitiesData.forEach(item => {
+      responseData.forEach(item => {
           const activity = item.json; // Extract the activity from the 'json' key
           if (activity && activity.id) {
               const activityRef = db.collection('users').doc(userId).collection('strava_activities').doc(String(activity.id));
               batch.set(activityRef, activity, { merge: true });
               syncedCount++;
+          } else {
+              console.warn('Skipping an item without an activity or ID:', item);
           }
       });
       
-      await batch.commit();
+      if (syncedCount > 0) {
+        await batch.commit();
+      }
 
       return { success: true, syncedCount };
 
     } catch (error: any) {
       console.error('Error calling and processing data from Strava:', error);
-      throw new Error('An error occurred while processing data from Strava.');
+      // Re-throw the error to be caught by the client-side caller
+      throw new Error(`An error occurred while processing data from Strava: ${error.message}`);
     }
   }
 );
