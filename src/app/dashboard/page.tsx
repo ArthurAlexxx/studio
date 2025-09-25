@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardHeader from '@/components/dashboard-header';
-import ConsumedFoodsList from '@/components/consumed-foods-list';
 import type { MealEntry } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
 import DashboardMetrics from '@/components/dashboard-metrics';
@@ -11,10 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, getDoc, updateDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { differenceInCalendarDays, parseISO } from 'date-fns';
-import WaterTrackerCard from '@/components/water-tracker-card';
+import ConsumedFoodsList from '@/components/consumed-foods-list';
+import AppLayout from '@/components/app-layout';
 
 export default function DashboardPage() {
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
@@ -59,125 +57,59 @@ export default function DashboardPage() {
     });
   }, []);
 
-  const handleWaterUpdate = useCallback(async (newWaterIntake: number) => {
-    if (!user || !userProfile) return;
-
-    const updatedIntake = Math.max(0, newWaterIntake);
-    const originalIntake = userProfile.waterIntake;
-
-    setUserProfile(prev => prev ? { ...prev, waterIntake: updatedIntake } : null);
-    
-    try {
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, { waterIntake: updatedIntake });
-    } catch (error: any) {
-        console.error("Failed to update water intake:", error);
-        toast({
-            title: "Erro ao atualizar hidratação",
-            description: "Não foi possível salvar seu consumo de água.",
-            variant: "destructive"
-        });
-        // Reverter o estado local em caso de erro
-        setUserProfile(prev => prev ? { ...prev, waterIntake: originalIntake } : null);
-    }
-  }, [user, userProfile, toast]);
-
-
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          let profileData: UserProfile;
-          let updates: Partial<UserProfile> = {};
+        const userDocRef = doc(db, 'users', currentUser.uid);
 
-          if (userDoc.exists()) {
-            profileData = userDoc.data() as UserProfile;
-            const today = new Date().toISOString().split('T')[0];
-            const lastLogin = profileData.lastLoginDate;
-
-            // Garantir que campos de hidratação existam para usuários antigos
-            if (profileData.waterIntake === undefined) {
-                updates.waterIntake = 0;
-                profileData.waterIntake = 0;
+        const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setUserProfile(doc.data() as UserProfile);
+            } else {
+                // Se o perfil não existe, podemos redirecionar ou criar um.
+                // Por enquanto, apenas definimos como nulo.
+                setUserProfile(null);
             }
-            if (profileData.waterGoal === undefined) {
-                updates.waterGoal = 2000; // Meta padrão
-                profileData.waterGoal = 2000;
-            }
-
-            if (lastLogin !== today) {
-              updates.waterIntake = 0; // Resetar consumo de água
-              
-              if (lastLogin && differenceInCalendarDays(new Date(), parseISO(lastLogin)) === 1) {
-                updates.currentStreak = (profileData.currentStreak || 0) + 1;
-              } else if (lastLogin) { // Se não for o dia seguinte, reseta o streak
-                updates.currentStreak = 1;
-              } else { // Primeiro login
-                 updates.currentStreak = 1;
-              }
-              updates.lastLoginDate = today;
-            }
-             
-            if (Object.keys(updates).length > 0) {
-              await updateDoc(userDocRef, updates);
-              profileData = { ...profileData, ...updates };
-            }
-
-          } else { // Usuário novo, sem perfil no Firestore
-            profileData = {
-              fullName: currentUser.displayName || 'Usuário',
-              email: currentUser.email || '',
-              currentStreak: 1,
-              lastLoginDate: new Date().toISOString().split('T')[0],
-              calorieGoal: 2000,
-              proteinGoal: 140,
-              waterGoal: 2000,
-              waterIntake: 0,
-            };
-            await setDoc(userDocRef, profileData);
-          }
-          setUserProfile(profileData);
-
-          // --- Setup Real-time Listener for Meals ---
-          const todayStr = new Date().toISOString().split('T')[0];
-          const q = query(
-            collection(db, "meal_entries"),
-            where("userId", "==", currentUser.uid),
-            where("date", "==", todayStr)
-          );
-          
-          const unsubscribeMeals = onSnapshot(q, (querySnapshot) => {
-              const loadedEntries = querySnapshot.docs.map(doc => ({
-                  id: doc.id,
-                  ...(doc.data() as Omit<MealEntry, 'id'>)
-              }));
-              setMealEntries(loadedEntries);
-              setLoading(false);
-          }, (error) => {
-              console.error("Error fetching meals in real-time:", error);
-              toast({
-                title: "Erro ao carregar refeições",
-                description: "Não foi possível buscar suas refeições em tempo real.",
+        }, (error) => {
+            console.error("Error fetching user profile:", error);
+            toast({
+                title: "Erro ao carregar perfil",
+                description: "Não foi possível buscar seu perfil em tempo real.",
                 variant: "destructive"
-              });
-              setLoading(false);
-          });
-          
-          return () => unsubscribeMeals();
+            });
+        });
 
-        } catch (error: any) {
-          console.error("Error loading user data:", error);
-          toast({
-            title: "Erro ao carregar dados",
-            description: error.message || "Não foi possível buscar seus dados.",
-            variant: "destructive"
-          });
-          setLoading(false);
-        }
+        // --- Setup Real-time Listener for Meals ---
+        const todayStr = new Date().toISOString().split('T')[0];
+        const q = query(
+          collection(db, "meal_entries"),
+          where("userId", "==", currentUser.uid),
+          where("date", "==", todayStr)
+        );
+        
+        const unsubscribeMeals = onSnapshot(q, (querySnapshot) => {
+            const loadedEntries = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...(doc.data() as Omit<MealEntry, 'id'>)
+            }));
+            setMealEntries(loadedEntries);
+            if(loading) setLoading(false);
+        }, (error) => {
+            console.error("Error fetching meals in real-time:", error);
+            toast({
+              title: "Erro ao carregar refeições",
+              description: "Não foi possível buscar suas refeições em tempo real.",
+              variant: "destructive"
+            });
+             if(loading) setLoading(false);
+        });
+        
+        return () => {
+            unsubscribeProfile();
+            unsubscribeMeals();
+        };
+
       } else {
         setUser(null);
         setMealEntries([]);
@@ -187,9 +119,11 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeAuth();
-  }, [router, toast]);
+  }, [router, toast, loading]);
   
-  if (loading) {
+  const initialLoading = loading && (!user || !userProfile);
+
+  if (initialLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-gray-50 items-center justify-center">
          <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -205,33 +139,21 @@ export default function DashboardPage() {
   const mealsToday = mealEntries.map(entry => entry.mealData);
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gray-50">
-      <DashboardHeader 
-        onMealAdded={handleMealAdded} 
-        user={user} 
+    <AppLayout
+        user={user}
         userProfile={userProfile}
+        onMealAdded={handleMealAdded}
         onProfileUpdate={handleProfileUpdate}
-      />
-      <main className="flex-1 p-4 sm:p-6 md:p-8">
-        <div className="container mx-auto">
-              <>
-                <DashboardMetrics meals={mealsToday} userProfile={userProfile} />
-                <div className="mt-8">
-                    <WaterTrackerCard
-                        waterIntake={userProfile.waterIntake}
-                        waterGoal={userProfile.waterGoal}
-                        onWaterUpdate={handleWaterUpdate}
-                    />
-                </div>
-                <div className="mt-8">
-                  <ConsumedFoodsList 
-                    mealEntries={mealEntries} 
-                    onMealDeleted={handleMealDeleted}
-                  />
-                </div>
-              </>
+    >
+        <div className="container mx-auto py-8 px-4 sm:px-6 md:px-8">
+            <DashboardMetrics meals={mealsToday} userProfile={userProfile} />
+            <div className="mt-8">
+              <ConsumedFoodsList 
+                mealEntries={mealEntries} 
+                onMealDeleted={handleMealDeleted}
+              />
+            </div>
         </div>
-      </main>
-    </div>
+    </AppLayout>
   );
 }

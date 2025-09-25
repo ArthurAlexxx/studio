@@ -2,9 +2,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { BarChart3, Plus, LogOut, User as UserIcon, Settings, Leaf, ChevronDown, History, Menu } from 'lucide-react';
-import Link from 'next/link';
+import { Plus, LogOut, User as UserIcon, Settings, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AddMealModal from './add-meal-modal';
 import { useState } from 'react';
@@ -41,94 +39,44 @@ export default function DashboardHeader({ onMealAdded, user, userProfile, onProf
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-20 items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-              <Leaf className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
-              <h1 className="text-xl md:text-2xl font-bold text-foreground">NutriSmart</h1>
-          </Link>
-          
-          <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-2">
-                {user && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary">
-                          <UserIcon className="h-5 w-5 text-primary" />
-                          <span>Olá, {userName}!</span>
-                          <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                            <BarChart3 className="mr-2 h-4 w-4" />
-                            <span>Meu Dashboard</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push('/history')}>
-                            <History className="mr-2 h-4 w-4" />
-                            <span>Meu Histórico</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>Definir Metas</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Sair</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Refeição
-                </Button>
-              </div>
+      <div className="flex items-center gap-4">
+        <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm hidden sm:flex">
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar Refeição
+        </Button>
+         <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} size="icon" className="shadow-sm flex sm:hidden">
+          <Plus className="h-5 w-5" />
+        </Button>
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="rounded-full">
+                <UserIcon className="h-5 w-5" />
+                <span className="sr-only">Toggle user menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                    <p className='font-semibold'>Olá, {userName}!</p>
+                    <p className='text-xs font-normal text-muted-foreground'>{user.email}</p>
+                </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setSettingsModalOpen(true)}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Definir Metas</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50/80">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
 
-            <div className="md:hidden">
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <Menu className="h-6 w-6" />
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right">
-                        <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
-                        <div className="flex flex-col h-full">
-                            <div className="flex-grow mt-8 grid gap-4 text-lg">
-                                <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-primary font-medium">
-                                    <BarChart3 className="mr-2 h-4 w-4" />
-                                    <span>Meu Dashboard</span>
-                                </Link>
-                                <Link href="/history" className="flex items-center gap-2 text-muted-foreground hover:text-primary font-medium">
-                                    <History className="mr-2 h-4 w-4" />
-                                    <span>Meu Histórico</span>
-                                </Link>
-                                <button onClick={() => setSettingsModalOpen(true)} className="flex items-center gap-2 text-muted-foreground hover:text-primary font-medium">
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    <span>Definir Metas</span>
-                                </button>
-                                <button onClick={handleSignOut} className="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Sair</span>
-                                </button>
-                                
-                                <Button onClick={() => setAddMealModalOpen(true)} disabled={!userId} className="shadow-sm w-full mt-4">
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Adicionar Refeição
-                                </Button>
-                            </div>
-                        </div>
-                    </SheetContent>
-                </Sheet>
-            </div>
-          </div>
-        </div>
-      </header>
       <AddMealModal isOpen={isAddMealModalOpen} onOpenChange={setAddMealModalOpen} onMealAdded={onMealAdded} userId={userId} />
+      
       {userProfile && userId && (
          <SettingsModal
             isOpen={isSettingsModalOpen}
