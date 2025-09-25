@@ -55,11 +55,6 @@ const stravaSyncFlow = ai.defineFlow(
       
       const activitiesData: StravaActivity[] = await response.json();
       
-      if (!Array.isArray(activitiesData)) {
-          console.error('Webhook did not return an array. Data:', activitiesData);
-          throw new Error('Webhook response is not in the expected format (array).');
-      }
-
       const batch = db.batch();
       let syncedCount = 0;
 
