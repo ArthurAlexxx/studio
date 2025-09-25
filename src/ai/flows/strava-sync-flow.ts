@@ -41,11 +41,16 @@ const stravaSyncFlow = ai.defineFlow(
 
       if (response.ok) {
         const data = await response.json();
-        // A API de teste retorna um array dentro de um array, então precisamos extrair
+        
+        // A API de teste pode retornar um array dentro de um array, ou um objeto único
         if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-            return data[0];
+            return data[0]; // Extrai o array de atividades
         }
-        return data;
+        if (!Array.isArray(data)) {
+            return [data]; // Garante que a saída seja sempre um array
+        }
+        return data; // Retorna o array como está
+
       } else {
         const errorBody = await response.text();
         console.error(`Falha ao acionar o webhook. Status: ${response.status}. Detalhes: ${errorBody}`);
