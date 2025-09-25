@@ -7,58 +7,59 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/server'; // Usando server-side admin
+import type { StravaActivity } from '@/types/strava';
 
-const StravaActivitySchema = z.object({
-    id: z.number(),
-    nome: z.string(),
-    tipo: z.string(),
-    sport_type: z.string(),
-    distancia_km: z.number(),
-    tempo_min: z.number(),
-    elevacao_ganho: z.number(),
-    data_inicio_local: z.string(),
+const StravaSyncInputSchema = z.object({
+  userId: z.string(),
 });
 
-const StravaSyncOutputSchema = z.array(StravaActivitySchema);
+type StravaSyncInput = z.infer<typeof StravaSyncInputSchema>;
 
-type StravaSyncOutput = z.infer<typeof StravaSyncOutputSchema>;
-
-export async function stravaSync(): Promise<StravaSyncOutput> {
-  return stravaSyncFlow();
+export async function stravaSync(input: StravaSyncInput): Promise<void> {
+  await stravaSyncFlow(input);
 }
 
 const stravaSyncFlow = ai.defineFlow(
   {
     name: 'stravaSyncFlow',
-    inputSchema: z.void(),
-    outputSchema: StravaSyncOutputSchema,
+    inputSchema: StravaSyncInputSchema,
+    outputSchema: z.void(),
   },
-  async () => {
+  async ({ userId }) => {
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/e70734fa-c464-4ea5-828b-d1b68da30a41';
 
     try {
       const response = await fetch(webhookUrl, { method: 'POST' });
 
       if (response.ok) {
-        const data = await response.json();
+        let activities: StravaActivity[] = await response.json();
         
-        // A API de teste pode retornar um array dentro de um array, ou um objeto único
-        if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-            return data[0]; // Extrai o array de atividades
+        // A API de teste pode retornar um array dentro de um array
+        if (Array.isArray(activities) && activities.length > 0 && Array.isArray(activities[0])) {
+            activities = activities[0]; 
+        } else if (!Array.isArray(activities)) {
+            // Se for um objeto único, transforma em array
+            activities = [activities as any];
         }
-        if (!Array.isArray(data)) {
-            return [data]; // Garante que a saída seja sempre um array
+
+        if (activities && activities.length > 0) {
+            const batchPromises = activities.map(activity => {
+                const activityRef = doc(db, 'users', userId, 'strava_activities', String(activity.id));
+                return setDoc(activityRef, activity, { merge: true });
+            });
+            await Promise.all(batchPromises);
         }
-        return data; // Retorna o array como está
 
       } else {
         const errorBody = await response.text();
         console.error(`Falha ao acionar o webhook. Status: ${response.status}. Detalhes: ${errorBody}`);
-        return [];
+        throw new Error(`Falha na sincronização com o Strava. Status: ${response.status}`);
       }
     } catch (error: any) {
-      console.error('Erro ao chamar o webhook do Strava:', error);
-      return [];
+      console.error('Erro ao chamar e salvar dados do Strava:', error);
+       throw new Error('Ocorreu um erro ao processar os dados do Strava.');
     }
   }
 );
