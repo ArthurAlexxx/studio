@@ -12,6 +12,7 @@ import { Loader2, Sparkles, ChefHat } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import ChefForm from '@/components/chef-form';
 import RecipeDisplay, { type Recipe } from '@/components/recipe-display';
+import { chefVirtualFlow } from '@/ai/flows/chef-flow';
 
 export default function ChefPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -53,45 +54,12 @@ export default function ChefPage() {
     setGeneratedRecipe(null);
     
     try {
-      const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
-      const payload = {
-        action: 'chef',
-        ...data
-      };
-
-      const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+      const recipe = await chefVirtualFlow(data);
+      setGeneratedRecipe(recipe);
+      toast({
+          title: "Receita Gerada! 🍳",
+          description: "Sua nova receita está pronta para ser preparada."
       });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        
-        if (responseData && responseData.length > 0 && typeof responseData[0].output === 'string' && responseData[0].output.trim() !== '') {
-            // Extrai a string JSON de dentro do campo 'output'
-            let recipeString = responseData[0].output;
-
-            // Remove os marcadores de bloco de código se existirem
-            if (recipeString.startsWith('```json')) {
-              recipeString = recipeString.substring(7, recipeString.length - 3).trim();
-            }
-
-            const recipe = JSON.parse(recipeString);
-            setGeneratedRecipe(recipe);
-            
-            toast({
-                title: "Receita Gerada! 🍳",
-                description: "Sua nova receita está pronta para ser preparada."
-            });
-        } else {
-            throw new Error("A resposta do webhook não está no formato esperado.");
-        }
-      } else {
-         const errorText = await response.text();
-         console.error("Failed to generate recipe from webhook:", errorText);
-         throw new Error("A resposta do webhook não foi bem-sucedida.");
-      }
     } catch (error) {
        console.error("Failed to generate recipe:", error);
        toast({
