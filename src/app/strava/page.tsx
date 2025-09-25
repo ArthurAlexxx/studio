@@ -128,7 +128,7 @@ export default function StravaPage() {
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between items-start mb-8 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Sincronização com Strava</h1>
+            <h1 className="text-3xl font-bold text-foreground">Minhas Atividades Físicas</h1>
             <p className="text-muted-foreground max-w-2xl mt-2">Veja suas atividades físicas importadas do Strava. Clique para buscar e salvar as atividades mais recentes.</p>
           </div>
           <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md mt-4 sm:mt-0 shrink-0">
@@ -147,7 +147,7 @@ export default function StravaPage() {
         </div>
 
         {activities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+          <div className="flex flex-col gap-4 animate-fade-in">
             {activities.map(activity => (
               <StravaActivityCard key={activity.id} activity={activity} />
             ))}

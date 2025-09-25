@@ -4,17 +4,19 @@ import { Separator } from '@/components/ui/separator';
 import type { StravaActivity } from '@/types/strava';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Activity, Route, Calendar, TrendingUp, Timer, Mountain, Footprints, Bike, PersonStanding } from 'lucide-react';
+import { Activity, Route, Calendar, Timer, Mountain, Footprints, Bike, PersonStanding } from 'lucide-react';
 
 interface StravaActivityCardProps {
   activity: StravaActivity;
 }
 
 const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: string, label: string }) => (
-    <div className="flex flex-col items-center text-center">
-        <Icon className="h-6 w-6 text-primary mb-2" />
-        <p className="font-bold text-lg text-foreground">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="flex items-center gap-2">
+        <Icon className="h-5 w-5 text-primary" />
+        <div className='flex flex-col sm:flex-row sm:items-baseline sm:gap-2'>
+            <p className="font-semibold text-base text-foreground">{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
     </div>
 );
 
@@ -27,35 +29,34 @@ const getSportIcon = (sportType: string) => {
     }
 }
 
-
 export default function StravaActivityCard({ activity }: StravaActivityCardProps) {
   const activityDate = new Date(activity.data_inicio_local);
-  const formattedDate = format(activityDate, "dd 'de' MMMM, yyyy", { locale: ptBR });
+  const formattedDate = format(activityDate, "dd 'de' MMM, yyyy", { locale: ptBR });
   const formattedTime = format(activityDate, "HH:mm", { locale: ptBR });
 
   return (
-    <Card className="shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl flex flex-col">
-      <CardHeader>
-        <div className='flex justify-between items-start gap-4'>
+    <Card className="shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl w-full">
+      <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex w-full sm:w-auto items-center gap-4">
+            <div className="p-3 rounded-lg bg-primary/10 text-primary shrink-0">
+                {getSportIcon(activity.sport_type)}
+            </div>
             <div className="flex-1">
-                <p className="text-sm font-medium text-primary">{activity.tipo}</p>
-                <CardTitle className="text-xl font-bold leading-tight mt-1">{activity.nome}</CardTitle>
-                <CardDescription className="text-sm mt-2 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
+                <CardTitle className="text-base font-bold leading-tight">{activity.nome}</CardTitle>
+                <CardDescription className="text-sm flex items-center gap-1.5 mt-1">
+                    <Calendar className="h-3.5 w-3.5" />
                     {formattedDate} às {formattedTime}
                 </CardDescription>
             </div>
-            <div className="p-3 rounded-full bg-primary/10 text-primary shrink-0">
-                {getSportIcon(activity.sport_type)}
-            </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-end">
-        <Separator className="mb-6 mt-2" />
-        <div className="grid grid-cols-3 gap-4 text-center">
-            <StatItem icon={Route} value={`${activity.distancia_km.toFixed(2)} km`} label="Distância" />
-            <StatItem icon={Timer} value={`${Math.round(activity.tempo_min)} min`} label="Duração" />
-            <StatItem icon={Mountain} value={`${Math.round(activity.elevacao_ganho)} m`} label="Elevação" />
+
+        <Separator orientation='vertical' className="h-12 hidden sm:block mx-4" />
+        <Separator className="sm:hidden" />
+        
+        <div className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 pt-2 sm:pt-0">
+            <StatItem icon={Route} value={`${activity.distancia_km.toFixed(2)}`} label="km" />
+            <StatItem icon={Timer} value={`${Math.round(activity.tempo_min)}`} label="min" />
+            <StatItem icon={Mountain} value={`${Math.round(activity.elevacao_ganho)}`} label="m" />
         </div>
       </CardContent>
     </Card>
