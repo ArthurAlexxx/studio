@@ -56,6 +56,7 @@ const stravaSyncFlow = ai.defineFlow(
       }
 
       const activities: StravaActivity[] = await response.json();
+      console.log('Atividades recebidas do webhook:', activities);
       
       if (!Array.isArray(activities) || activities.length === 0) {
         return { syncedCount: 0 };
