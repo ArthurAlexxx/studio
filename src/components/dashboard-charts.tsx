@@ -1,13 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Cell } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Cell } from 'recharts';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 const caloriesChartConfig = {
   calories: {
     label: 'Calorias',
-    color: 'hsl(var(--chart-2))',
+    color: 'hsl(var(--chart-1))',
   },
 } satisfies ChartConfig;
 
@@ -46,18 +46,22 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
     return (
       <ChartContainer config={caloriesChartConfig} className="min-h-[250px] w-full">
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={data} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
+          <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid vertical={false} strokeDasharray="3 3"/>
             <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} stroke="#888888" fontSize={12} />
             <YAxis tickLine={false} axisLine={false} tickMargin={10} stroke="#888888" fontSize={12} />
             <ChartTooltip
-                cursor={false}
+                cursor={{ stroke: 'hsl(var(--chart-1))', strokeWidth: 2, strokeDasharray: '3 3' }}
                 content={<ChartTooltipContent indicator="dot" />}
             />
-            <Bar dataKey="calories" fill="hsl(var(--chart-1))" radius={[5, 5, 0, 0]}>
-              <LabelList dataKey="calories" position="top" offset={8} className="fill-foreground" fontSize={12} />
-            </Bar>
-          </BarChart>
+             <Area type="monotone" dataKey="calories" stroke="hsl(var(--chart-1))" fillOpacity={1} fill="url(#colorCalories)" strokeWidth={2} />
+          </AreaChart>
         </ResponsiveContainer>
       </ChartContainer>
     );
