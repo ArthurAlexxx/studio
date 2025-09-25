@@ -42,7 +42,7 @@ const stravaSyncFlow = ai.defineFlow(
     outputSchema: StravaSyncOutputSchema,
   },
   async (userId) => {
-    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/e70734fa-c464-4ea5-828b-d1b68da30a41';
+    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/f6a7bde1-c939-46ad-9d44-4d3251a48c0f';
 
     try {
       const response = await fetch(webhookUrl, { method: 'POST' });
@@ -56,14 +56,16 @@ const stravaSyncFlow = ai.defineFlow(
       const responseData = await response.json();
       
       // Flexible handling of the webhook response body
-      let activitiesData = responseData.body;
-      if (typeof activitiesData === 'string') {
+      let activitiesData;
+      if (typeof responseData.body === 'string') {
         try {
-          activitiesData = JSON.parse(activitiesData);
+          activitiesData = JSON.parse(responseData.body);
         } catch (e) {
           console.error("Failed to parse response body string:", e);
           throw new Error("The response body is a malformed JSON string.");
         }
+      } else {
+        activitiesData = responseData.body;
       }
       
       // Ensure activitiesData is always an array
@@ -95,4 +97,3 @@ const stravaSyncFlow = ai.defineFlow(
     }
   }
 );
-
