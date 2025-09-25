@@ -72,9 +72,14 @@ const flow = ai.defineFlow(
       
       const responseData = await response.json();
       
-      // Validate the direct JSON response against the schema
-      const recipe = RecipeSchema.parse(responseData);
-      return recipe;
+      // Handle array response from webhook
+      if (Array.isArray(responseData) && responseData.length > 0) {
+          const recipeData = responseData[0];
+          const recipe = RecipeSchema.parse(recipeData);
+          return recipe;
+      } else {
+          throw new Error("Webhook response is not in the expected array format or is empty.");
+      }
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
