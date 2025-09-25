@@ -88,6 +88,7 @@ export default function HistoryPage() {
         ...(doc.data() as Omit<MealEntry, 'id'>)
       }));
       setMealEntries(loadedEntries);
+      setLoading(false); // Move loading to here to ensure UI updates after meals are fetched
     }, (error) => {
       console.error("Error fetching historical meals:", error);
       toast({
@@ -95,12 +96,13 @@ export default function HistoryPage() {
         description: "Não foi possível buscar as refeições para a data selecionada.",
         variant: "destructive"
       });
+      setLoading(false);
     });
 
-    // Fetch Hydration
+    // Fetch Hydration for the selected date
     const fetchHydration = async () => {
+        const hydrationDocRef = doc(db, 'hydration_entries', `${user.uid}_${formattedDate}`);
         try {
-            const hydrationDocRef = doc(db, 'hydration_entries', `${user.uid}_${formattedDate}`);
             const docSnap = await getDoc(hydrationDocRef);
             if (docSnap.exists()) {
                 setHydrationEntry(docSnap.data() as HydrationEntry);
@@ -109,11 +111,11 @@ export default function HistoryPage() {
             }
         } catch (error) {
             console.error("Error fetching hydration entry:", error);
-            setHydrationEntry(null);
+            setHydrationEntry(null); // Ensure it's null on error
         }
     };
     
-    Promise.all([fetchHydration()]).finally(() => setLoading(false));
+    fetchHydration();
 
     return () => {
         unsubscribeMeals();

@@ -124,7 +124,7 @@ export default function HydrationPage() {
                     date: yesterdayStr,
                     intake: profileData.waterIntake,
                     goal: profileData.waterGoal
-                });
+                }, { merge: true });
 
                 updates.waterIntake = 0; 
                 if (profileData.waterIntake >= profileData.waterGoal) {
@@ -136,11 +136,12 @@ export default function HydrationPage() {
 
                 batch.update(userDocRef, updates);
                 await batch.commit();
-
-                // setUserProfile({ ...profileData, ...updates });
-                fetchHistory(currentUser.uid); // refetch history
-            } else if (Object.keys(updates).length > 0) {
-              await updateDoc(userDocRef, updates);
+                
+                // After commit, refetch history to include the new entry
+                fetchHistory(currentUser.uid);
+            } else if (!lastLogin) { // First login
+                 updates.lastLoginDate = todayStr;
+                 await updateDoc(userDocRef, updates);
             }
             
             setUserProfile(userDoc.data() as UserProfile);
