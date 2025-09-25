@@ -161,16 +161,39 @@ export default function DashboardPage() {
                      setHydrationHistory(prev => [...prev, newHydrationEntry].sort((a, b) => b.date.localeCompare(a.date)));
                 });
             }
-            if (!isHydrationLoaded) setIsHydrationLoaded(true);
         }, (error) => {
             console.error("Error fetching today's hydration:", error);
-            if (!isHydrationLoaded) setIsHydrationLoaded(true);
+        });
+
+        // Listener for weekly hydration history
+        const sevenDaysAgo = getLocalDateString(subDays(new Date(), 6));
+        const weeklyHydrationQuery = query(
+          collection(db, 'hydration_entries'),
+          where('userId', '==', currentUser.uid),
+          where('date', '>=', sevenDaysAgo),
+          orderBy('date', 'desc')
+        );
+
+        const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
+          const weeklyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+          setHydrationHistory(weeklyData);
+          if (!isHydrationLoaded) setIsHydrationLoaded(true);
+        }, (error) => {
+          console.error("FirebaseError:", error.message);
+          if (!isHydrationLoaded) setIsHydrationLoaded(true);
+          // Optional: Show a toast to the user
+          // toast({
+          //   title: "Erro ao carregar histórico de hidratação",
+          //   description: "Não foi possível buscar os dados da semana. O gráfico pode não ser exibido.",
+          //   variant: "destructive"
+          // });
         });
         
         return () => {
             unsubscribeProfile();
             unsubscribeMeals();
             unsubscribeTodayHydration();
+            unsubscribeWeeklyHydration();
         };
 
       } else {
