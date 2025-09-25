@@ -14,6 +14,15 @@ import { useRouter } from 'next/navigation';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import AppLayout from '@/components/app-layout';
 
+// Função para obter data local no formato YYYY-MM-DD
+const getLocalDateString = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export default function DashboardPage() {
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +92,7 @@ export default function DashboardPage() {
         });
 
         // --- Setup Real-time Listener for Meals ---
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateString();
         const q = query(
           collection(db, "meal_entries"),
           where("userId", "==", currentUser.uid),

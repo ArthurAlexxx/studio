@@ -13,6 +13,16 @@ import { differenceInCalendarDays, parseISO } from 'date-fns';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import AppLayout from '@/components/app-layout';
 
+// Função para obter data local no formato YYYY-MM-DD
+const getLocalDateString = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+
 export default function HydrationPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -64,7 +74,7 @@ export default function HydrationPage() {
 
           if (userDoc.exists()) {
             profileData = userDoc.data() as UserProfile;
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             const lastLogin = profileData.lastLoginDate;
 
             if (profileData.waterIntake === undefined) {
@@ -99,7 +109,7 @@ export default function HydrationPage() {
               fullName: currentUser.displayName || 'Usuário',
               email: currentUser.email || '',
               currentStreak: 1,
-              lastLoginDate: new Date().toISOString().split('T')[0],
+              lastLoginDate: getLocalDateString(),
               calorieGoal: 2000,
               proteinGoal: 140,
               waterGoal: 2000,
