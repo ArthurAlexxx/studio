@@ -10,11 +10,11 @@ import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, updateDoc, setDoc, onSnapshot, collection, query, where, getDocs, limit, orderBy, writeBatch } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { differenceInCalendarDays, parseISO, format, subDays } from 'date-fns';
+import { differenceInCalendarDays, parseISO, format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import AppLayout from '@/components/app-layout';
-import HydrationCharts from '@/components/hydration-charts';
+import HydrationProgress from '@/components/hydration-progress';
 
 // Função para obter data local no formato YYYY-MM-DD
 const getLocalDateString = (date = new Date()) => {
@@ -63,22 +63,21 @@ export default function HydrationPage() {
   }, [user, userProfile, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
-    // Consulta simplificada para evitar a necessidade de um índice composto complexo.
+    const today = new Date();
+    const weekStart = startOfWeek(today, { locale: ptBR });
+    const startDate = format(subDays(weekStart, 1), 'yyyy-MM-dd'); // Um dia antes para pegar a semana toda
+
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      limit(30) // Busca um pouco mais para garantir que tenhamos os 7 dias mais recentes
+      where('date', '>=', startDate),
+      orderBy('date', 'desc')
     );
 
     const querySnapshot = await getDocs(q);
     const history = querySnapshot.docs.map(doc => doc.data() as HydrationEntry);
-    
-    // Ordena os resultados no cliente e pega os últimos 7
-    const sortedHistory = history
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(-7);
 
-    setHydrationHistory(sortedHistory);
+    setHydrationHistory(history);
   }, []);
 
 
@@ -103,7 +102,7 @@ export default function HydrationPage() {
             if (profileData.waterGoal === undefined) updates.waterGoal = 2000;
 
             if (lastLogin && lastLogin !== todayStr) {
-                const yesterdayStr = getLocalDateString(new Date(lastLogin));
+                const yesterdayStr = getLocalDateString(subDays(new Date(), 1));
                 const entryRef = doc(db, 'hydration_entries', `${currentUser.uid}_${yesterdayStr}`);
                 
                 const batch = writeBatch(db);
@@ -173,23 +172,34 @@ export default function HydrationPage() {
     return () => unsubscribeAuth();
   }, [router, toast, fetchHistory]);
   
-  const chartData = useMemo(() => {
+  const weeklyChartData = useMemo(() => {
+    if (!userProfile) return [];
+
     const today = new Date();
-    const days = Array.from({ length: 7 }).map((_, i) => subDays(today, i)).reverse();
-    
+    const weekStart = startOfWeek(today, { locale: ptBR });
+    const days = eachDayOfInterval({ start: weekStart, end: endOfWeek(today, { locale: ptBR }) });
+
     return days.map(day => {
         const dateStr = getLocalDateString(day);
-        let entry;
-        if (dateStr === getLocalDateString(today)) {
-             entry = { intake: userProfile?.waterIntake || 0, goal: userProfile?.waterGoal || 2000 };
-        } else {
-             entry = hydrationHistory.find(h => h.date === dateStr);
-        }
+        
+        let intake = 0;
+        let goal = userProfile.waterGoal || 2000;
 
+        if (isToday(day)) {
+             intake = userProfile.waterIntake || 0;
+        } else {
+             const historyEntry = hydrationHistory.find(h => h.date === dateStr);
+             if (historyEntry) {
+                intake = historyEntry.intake;
+                goal = historyEntry.goal;
+             }
+        }
+        
         return {
-            day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
-            intake: entry?.intake || 0,
-            goal: entry?.goal || userProfile?.waterGoal || 2000,
+            date: day,
+            day: format(day, 'E', { locale: ptBR }),
+            intake: intake,
+            goal: goal,
         }
     });
   }, [hydrationHistory, userProfile]);
@@ -228,7 +238,7 @@ export default function HydrationPage() {
                 />
             </div>
             <div className="lg:col-span-2">
-                 <HydrationCharts weeklyData={chartData} />
+                 <HydrationProgress weeklyData={weeklyChartData} />
             </div>
         </div>
       </div>
