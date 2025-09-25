@@ -13,7 +13,7 @@ interface StravaActivityCardProps {
 const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: string, label: string }) => (
     <div className="flex items-center gap-2">
         <Icon className="h-5 w-5 text-primary" />
-        <div className='flex flex-col sm:flex-row sm:items-baseline sm:gap-2'>
+        <div className='flex items-baseline gap-2'>
             <p className="font-semibold text-base text-foreground">{value}</p>
             <p className="text-xs text-muted-foreground">{label}</p>
         </div>
@@ -31,12 +31,12 @@ const getSportIcon = (sportType: string) => {
 
 export default function StravaActivityCard({ activity }: StravaActivityCardProps) {
   const activityDate = new Date(activity.data_inicio_local);
-  const formattedDate = format(activityDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  const formattedDate = format(activityDate, "dd 'de' MMM 'de' yyyy", { locale: ptBR });
 
   return (
     <Card className="shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl w-full">
-      <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
-        <div className="flex w-full sm:w-auto items-center gap-4">
+      <CardContent className="p-4 flex flex-col md:flex-row items-start md:items-center gap-4">
+        <div className="flex w-full items-center gap-4">
             <div className="p-3 rounded-lg bg-primary/10 text-primary shrink-0">
                 {getSportIcon(activity.sport_type)}
             </div>
@@ -49,10 +49,9 @@ export default function StravaActivityCard({ activity }: StravaActivityCardProps
             </div>
         </div>
 
-        <Separator orientation='vertical' className="h-12 hidden sm:block mx-4" />
-        <Separator className="sm:hidden" />
+        <Separator className="md:hidden" />
         
-        <div className="w-full sm:w-auto grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 pt-2 sm:pt-0">
+        <div className="w-full md:w-auto grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 pt-2 md:pt-0 md:ml-auto md:pl-4">
             <StatItem icon={Route} value={`${activity.distancia_km.toFixed(2)}`} label="km" />
             <StatItem icon={Timer} value={`${Math.round(activity.tempo_min)}`} label="min" />
             <StatItem icon={Mountain} value={`${Math.round(activity.elevacao_ganho)}`} label="m" />
