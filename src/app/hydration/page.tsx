@@ -1,3 +1,4 @@
+
 // src/app/hydration/page.tsx
 'use client';
 
@@ -97,12 +98,11 @@ export default function HydrationPage() {
             if (docSnap.exists()) {
                 setTodayHydration({ id: docSnap.id, ...docSnap.data() } as HydrationEntry);
             } else {
-                const userWaterGoal = userProfile?.waterGoal || 2000;
                 const newEntry: Omit<HydrationEntry, 'id'> = {
                     userId: currentUser.uid,
                     date: todayStr,
                     intake: 0,
-                    goal: userWaterGoal,
+                    goal: userProfile?.waterGoal || 2000,
                 };
                 setDoc(todayDocRef, newEntry).then(() => {
                   fetchHistory(currentUser.uid); // Refetch history after creating today's entry
@@ -168,10 +168,12 @@ export default function HydrationPage() {
     if (hydrationHistory.length === 0) return { avgIntake: 0, goalMetPercentage: 0 };
     
     const last7DaysHistory = hydrationHistory.filter(h => {
-        const entryDate = new Date(h.date + 'T00:00:00');
+        const entryDate = new Date(h.date.replace(/-/g, '/')); // Fix for date parsing
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(today.getDate() - 7);
+        sevenDaysAgo.setDate(today.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
         return entryDate >= sevenDaysAgo && entryDate <= today;
     });
 
@@ -186,46 +188,51 @@ export default function HydrationPage() {
   }, [hydrationHistory]);
 
   const currentStreak = useMemo(() => {
-    const sortedHistory = [...hydrationHistory].sort((a, b) => b.date.localeCompare(a.date));
+    const sortedHistory = [...hydrationHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     if (sortedHistory.length === 0) {
       return 0;
     }
 
     let streak = 0;
     let expectedDate = new Date();
-
-    // Check today first
+    expectedDate.setHours(0, 0, 0, 0);
+    
     const todayStr = getLocalDateString(expectedDate);
     const todayEntry = sortedHistory.find(e => e.date === todayStr);
 
-    if (todayEntry && todayEntry.intake >= todayEntry.goal) {
-      streak++;
-      expectedDate.setDate(expectedDate.getDate() - 1);
-    } else if (todayEntry && todayEntry.intake < todayEntry.goal) {
-      // If today goal is not met, but it is today, check from yesterday
-      expectedDate.setDate(expectedDate.getDate() - 1);
-    } else if (!todayEntry) {
-       // If there's no entry for today, check from yesterday but reset streak
-       expectedDate.setDate(expectedDate.getDate() - 1);
-    }
-    
-    // Check consecutive previous days from the rest of the history
-    const remainingHistory = sortedHistory.filter(e => e.date < todayStr);
+    let startIndex = 0;
 
-    for (const entry of remainingHistory) {
-      const expectedDateStr = getLocalDateString(expectedDate);
-      if (entry.date === expectedDateStr) {
-        if (entry.intake >= entry.goal) {
-          streak++;
-          expectedDate.setDate(expectedDate.getDate() - 1);
-        } else {
-          // Streak is broken if goal not met on an expected day
-          break;
+    // Se existe um registro para hoje
+    if (todayEntry) {
+        if (todayEntry.intake >= todayEntry.goal) {
+            streak++;
         }
-      } else if (entry.date < expectedDateStr) {
-        // A day is missing, streak is broken
-        break;
-      }
+        startIndex = sortedHistory.findIndex(e => e.date === todayStr);
+        if (startIndex === -1) startIndex = 0; // fallback
+        else startIndex += 1;
+        
+        expectedDate.setDate(expectedDate.getDate() - 1);
+    } else {
+         // Se não há registro para hoje, a sequência é 0, mas começamos a verificar a partir de ontem
+         expectedDate.setDate(expectedDate.getDate() - 1);
+    }
+
+    for (let i = startIndex; i < sortedHistory.length; i++) {
+        const entry = sortedHistory[i];
+        const expectedDateStr = getLocalDateString(expectedDate);
+        
+        if (entry.date === expectedDateStr) {
+            if (entry.intake >= entry.goal) {
+                streak++;
+                expectedDate.setDate(expectedDate.getDate() - 1);
+            } else {
+                // Streak is broken
+                break;
+            }
+        } else if (new Date(entry.date) < expectedDate) {
+            // Gap in days, streak is broken
+            break;
+        }
     }
 
     return streak;
