@@ -65,60 +65,28 @@ export default function ChefPage() {
           body: JSON.stringify(payload),
       });
 
-      // Para fins de demonstração, vamos simular o recebimento de uma receita.
-      // Substitua a lógica abaixo pela manipulação da resposta real do seu webhook.
       if (response.ok) {
-        // const recipeFromWebhook = await response.json();
-        // setGeneratedRecipe(recipeFromWebhook);
+        const recipeFromWebhook = await response.json();
+        setGeneratedRecipe(recipeFromWebhook);
+        toast({
+            title: "Receita Gerada! 🍳",
+            description: "Sua nova receita está pronta para ser preparada."
+        });
       } else {
-         console.warn("Webhook call succeeded, but we are using example data for now.");
+         const errorText = await response.text();
+         console.error("Failed to generate recipe from webhook:", errorText);
+         throw new Error("A resposta do webhook não foi bem-sucedida.");
       }
-
-      // Exemplo de receita (substituir com a lógica real do n8n)
-      const exampleRecipe: Recipe = {
-        title: 'Frango Grelhado com Brócolis e Arroz',
-        description: 'Uma refeição clássica, saudável e deliciosa, perfeita para um almoço ou jantar equilibrado. Otimizada para suas metas de proteína.',
-        prepTime: '15 min',
-        cookTime: '20 min',
-        servings: '2',
-        ingredients: [
-          '300g de peito de frango',
-          '1 maço de brócolis',
-          '1 xícara de arroz branco',
-          '2 dentes de alho',
-          'Azeite de oliva, sal e pimenta a gosto'
-        ],
-        instructions: [
-          'Cozinhe o arroz conforme as instruções da embalagem.',
-          'Corte o brócolis em floretes e cozinhe no vapor até ficar macio, mas ainda crocante.',
-          'Tempere o peito de frango com sal, pimenta e alho picado.',
-          'Grelhe o frango em fogo médio-alto com um fio de azeite até estar completamente cozido.',
-          'Sirva o frango grelhado com o arroz e o brócolis.'
-        ],
-        nutrition: {
-          calories: '550 kcal',
-          protein: '50g',
-          carbs: '45g',
-          fat: '18g'
-        }
-      };
-      
-      setGeneratedRecipe(exampleRecipe);
-      toast({
-        title: "Receita Gerada! 🍳",
-        description: "Sua nova receita está pronta para ser preparada."
-      });
-
     } catch (error) {
        console.error("Failed to generate recipe:", error);
        toast({
          title: "Erro ao gerar receita",
-         description: "Não foi possível conectar ao serviço. Usando dados de exemplo.",
+         description: "Não foi possível conectar ao serviço. Por favor, tente novamente.",
          variant: "destructive"
        });
-       // Fallback para dados de exemplo em caso de erro
+       // Opcional: pode-se remover o fallback ou mantê-lo para debug
        const fallbackRecipe: Recipe = {
-          title: 'Macarrão ao alho e óleo',
+          title: 'Macarrão ao alho e óleo (Fallback)',
           description: 'Uma receita simples e rápida para quando a criatividade falha.',
           prepTime: '5 min', cookTime: '15 min', servings: '1',
           ingredients: ['100g de macarrão', '2 dentes de alho', 'Azeite', 'Sal e pimenta'],
