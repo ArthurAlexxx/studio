@@ -60,16 +60,11 @@ export default function HydrationPage() {
         const q = query(
             collection(db, 'hydration_entries'),
             where("userId", "==", uid),
-            // Firestore requires an index for this query. Let's order client-side.
-            // orderBy("date", "desc"),
-            limit(30) // Fetch last 30 entries for calculations
+            orderBy("date", "desc"),
+            limit(30)
         );
         const querySnapshot = await getDocs(q);
         const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-        
-        // Sort client-side
-        history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
         setHydrationHistory(history);
     } catch (error: any) {
         console.error("Error fetching hydration history:", error);
@@ -159,38 +154,6 @@ export default function HydrationPage() {
     return { averageIntake, goalMetPercentage };
   }, [hydrationHistory]);
 
-  const currentStreak = useMemo(() => {
-        const sortedHistory = [...hydrationHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        let streak = 0;
-        let today = new Date();
-        
-        // Check today
-        const todayEntry = sortedHistory.find(entry => isSameDay(parseISO(entry.date), today));
-        if (todayEntry && todayEntry.intake >= todayEntry.goal) {
-            streak++;
-        } else if (todayEntry && todayEntry.intake < todayEntry.goal) {
-            return 0; // If today's goal is not met, streak is 0
-        } else if (!todayEntry) {
-            // No entry for today, so streak is 0
-            return 0;
-        }
-
-        // Check consecutive previous days
-        for (let i = 1; i < sortedHistory.length; i++) {
-            const currentDate = subDays(today, streak);
-            const entry = sortedHistory.find(e => isSameDay(parseISO(e.date), subDays(today, i)));
-            
-            if (entry && entry.intake >= entry.goal && isSameDay(parseISO(entry.date), subDays(today, streak))) {
-                 streak++;
-            } else {
-                break; // Streak is broken
-            }
-        }
-
-        return streak;
-  }, [hydrationHistory]);
-
   const weeklyChartData = useMemo(() => {
     const today = new Date();
     const weekStart = startOfWeek(today, { locale: ptBR });
@@ -247,7 +210,6 @@ export default function HydrationPage() {
                     weeklyData={weeklyChartData}
                     averageIntake={summaryStats.averageIntake}
                     goalMetPercentage={summaryStats.goalMetPercentage}
-                    streak={currentStreak}
                 />
              </div>
         </div>

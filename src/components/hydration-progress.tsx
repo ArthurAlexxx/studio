@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { type ChartConfig, ChartContainer } from '@/components/ui/chart';
-import { Flame, Target, Trophy } from 'lucide-react';
+import { Flame, Target } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface HydrationProgressProps {
@@ -20,7 +20,6 @@ interface HydrationProgressProps {
   }[];
   averageIntake: number;
   goalMetPercentage: number;
-  streak: number;
 }
 
 const chartConfig = {
@@ -64,7 +63,7 @@ const StatCard = ({ icon: Icon, title, value, unit, color }: { icon: React.Eleme
     </div>
 );
 
-export default function HydrationProgress({ weeklyData, averageIntake, goalMetPercentage, streak }: HydrationProgressProps) {
+export default function HydrationProgress({ weeklyData, averageIntake, goalMetPercentage }: HydrationProgressProps) {
   const chartData = weeklyData.map(d => ({ ...d, day: d.day.slice(0, 3) }));
 
   return (
@@ -75,7 +74,7 @@ export default function HydrationProgress({ weeklyData, averageIntake, goalMetPe
       <CardContent className="space-y-6">
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <StatCard
                 icon={Flame}
                 title="Média Diária (7d)"
@@ -89,13 +88,6 @@ export default function HydrationProgress({ weeklyData, averageIntake, goalMetPe
                 value={goalMetPercentage.toFixed(0)}
                 unit="%"
                 color="bg-green-500"
-            />
-            <StatCard
-                icon={Trophy}
-                title="Sequência Atual"
-                value={streak.toString()}
-                unit={streak === 1 ? 'dia' : 'dias'}
-                color="bg-amber-500"
             />
         </div>
 
