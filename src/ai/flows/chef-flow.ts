@@ -71,15 +71,19 @@ const flow = ai.defineFlow(
       }
       
       const responseData = await response.json();
-      
-      // Handle array response from webhook
+      let recipeData;
+
+      // Handle both array and single object response from webhook
       if (Array.isArray(responseData) && responseData.length > 0) {
-          const recipeData = responseData[0];
-          const recipe = RecipeSchema.parse(recipeData);
-          return recipe;
+          recipeData = responseData[0];
+      } else if (typeof responseData === 'object' && responseData !== null && !Array.isArray(responseData)) {
+          recipeData = responseData;
       } else {
-          throw new Error("Webhook response is not in the expected array format or is empty.");
+          throw new Error("Webhook response is not in the expected format (object or array with one object).");
       }
+      
+      const recipe = RecipeSchema.parse(recipeData);
+      return recipe;
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
