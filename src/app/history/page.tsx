@@ -90,8 +90,7 @@ export default function HistoryPage() {
     const mealsQuery = query(
       collection(db, "meal_entries"),
       where("userId", "==", user.uid),
-      where("date", "==", formattedDate),
-      orderBy("createdAt", "asc")
+      where("date", "==", formattedDate)
     );
 
     const unsubscribeMeals = onSnapshot(mealsQuery, (querySnapshot) => {
@@ -99,6 +98,12 @@ export default function HistoryPage() {
         id: doc.id,
         ...(doc.data() as Omit<MealEntry, 'id'>)
       }));
+      // Sort entries by createdAt timestamp client-side
+      loadedEntries.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() || 0;
+        const timeB = b.createdAt?.toMillis() || 0;
+        return timeA - timeB;
+      });
       setMealEntries(loadedEntries);
       mealsLoaded = true;
       checkLoadingDone();
