@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs, limit, orderBy } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -19,7 +19,6 @@ import AppLayout from '@/components/app-layout';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import ChartsSection from '@/components/charts-section';
 
-// Função para obter data local no formato YYYY-MM-DD
 const getLocalDateString = (date = new Date()) => {
     return format(date, 'yyyy-MM-dd');
 }
@@ -94,7 +93,6 @@ export default function DashboardPage() {
       if (currentUser) {
         setUser(currentUser);
 
-        // --- PROFILE LISTENER ---
         const userDocRef = doc(db, 'users', currentUser.uid);
         const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
             if (doc.exists()) {
@@ -108,7 +106,6 @@ export default function DashboardPage() {
             if (!isProfileLoaded) setIsProfileLoaded(true);
         });
 
-        // --- MEALS LISTENER ---
         const todayStr = getLocalDateString();
         const mealsQuery = query(
           collection(db, "meal_entries"),
@@ -127,16 +124,13 @@ export default function DashboardPage() {
             if(!areMealsLoaded) setAreMealsLoaded(true);
         });
 
-        // --- HYDRATION LISTENERS ---
         const todayDocId = `${currentUser.uid}_${todayStr}`;
         const todayDocRef = doc(db, 'hydration_entries', todayDocId);
         
-        // Listener for today's hydration
         const unsubscribeTodayHydration = onSnapshot(todayDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = { id: docSnap.id, ...docSnap.data() } as HydrationEntry;
                 setTodayHydration(data);
-                 // Also update history to reflect today's changes
                 setHydrationHistory(prevHistory => {
                     const existingIndex = prevHistory.findIndex(h => h.id === data.id);
                     if (existingIndex > -1) {
@@ -144,12 +138,10 @@ export default function DashboardPage() {
                         newHistory[existingIndex] = data;
                         return newHistory;
                     }
-                    // Sort is handled by the weekly query now
                     return [...prevHistory, data].sort((a, b) => a.date.localeCompare(b.date));
                 });
 
             } else {
-                // Use a local variable for profile to avoid stale state
                 const currentGoal = userProfile?.waterGoal || 2000;
                 const newEntry: Omit<HydrationEntry, 'id'> = {
                     userId: currentUser.uid,
@@ -167,7 +159,6 @@ export default function DashboardPage() {
             console.error("Error fetching today's hydration:", error);
         });
 
-        // Listener for weekly hydration history
         const sevenDaysAgo = getLocalDateString(subDays(new Date(), 6));
         const weeklyHydrationQuery = query(
           collection(db, 'hydration_entries'),
@@ -177,7 +168,6 @@ export default function DashboardPage() {
 
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
           const weeklyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-          // Sort manually on the client-side to avoid complex indexes
           weeklyData.sort((a, b) => a.date.localeCompare(b.date));
           setHydrationHistory(weeklyData);
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
@@ -217,9 +207,8 @@ export default function DashboardPage() {
     }
   }, [isProfileLoaded, areMealsLoaded, isHydrationLoaded]);
 
-   // Data preparation for charts
    const mealsToday = mealEntries.map(entry => entry.mealData);
-   const totalNutrients = mealsToday.reduce(
+   const totalNutrients = useMemo(() => mealsToday.reduce(
         (acc, meal) => {
             acc.calorias += meal.totais.calorias;
             acc.proteinas += meal.totais.proteinas;
@@ -228,40 +217,40 @@ export default function DashboardPage() {
             return acc;
         },
         { calorias: 0, proteinas: 0, carboidratos: 0, gorduras: 0 }
-    );
-    const macrosData = [
+    ), [mealsToday]);
+    
+    const macrosData = useMemo(() => [
         { name: 'Proteínas', value: totalNutrients.proteinas, fill: 'hsl(var(--chart-1))' },
         { name: 'Carboidratos', value: totalNutrients.carboidratos, fill: 'hsl(var(--chart-3))' },
         { name: 'Gorduras', value: totalNutrients.gorduras, fill: 'hsl(var(--chart-2))' },
-    ];
+    ], [totalNutrients]);
     
     const today = new Date();
     const weekStart = startOfWeek(today, { locale: ptBR });
     const weekEnd = endOfWeek(today, { locale: ptBR });
     const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
     
-    const weeklyCaloriesData = daysOfWeek.map(day => {
+    const weeklyCaloriesData = useMemo(() => daysOfWeek.map(day => {
         const isToday = isSameDay(day, today);
-        // This is a placeholder as we don't fetch historical meal data on this page
         return {
             day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
             calories: isToday ? Math.round(totalNutrients.calorias) : 0, 
         };
-    });
+    }), [daysOfWeek, today, totalNutrients.calorias]);
     
-    const weeklyHydrationData = daysOfWeek.map(day => {
+    const weeklyHydrationData = useMemo(() => daysOfWeek.map(day => {
         const entry = hydrationHistory.find(h => isSameDay(parseISO(h.date), day));
         return {
             day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
             intake: entry ? entry.intake : 0,
         };
-    });
+    }), [daysOfWeek, hydrationHistory]);
   
   const initialLoading = loading || !user || !userProfile || !todayHydration;
 
   if (initialLoading) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-gray-50 items-center justify-center">
+      <div className="flex min-h-screen w-full flex-col bg-muted/30 items-center justify-center">
          <Loader2 className="h-16 w-16 animate-spin text-primary" />
          <p className="mt-4 text-muted-foreground">Verificando sua sessão e carregando dados...</p>
       </div>
@@ -279,9 +268,9 @@ export default function DashboardPage() {
         onMealAdded={handleMealAdded}
         onProfileUpdate={handleProfileUpdate}
     >
-        <div className="container mx-auto py-8 px-4 sm:px-6 md:px-8">
-            <DashboardMetrics 
-                meals={mealsToday}
+        <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <DashboardMetrics
+                totalNutrients={totalNutrients}
                 userProfile={userProfile}
             />
             
