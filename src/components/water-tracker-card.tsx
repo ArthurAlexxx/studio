@@ -15,7 +15,7 @@ interface WaterTrackerCardProps {
 const CUP_SIZE = 250; // Tamanho do copo em ml
 
 export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate }: WaterTrackerCardProps) {
-  const progress = Math.min((waterIntake / waterGoal) * 100, 100);
+  const progress = waterGoal > 0 ? Math.min((waterIntake / waterGoal) * 100, 100) : 0;
 
   const handleAddWater = () => {
     onWaterUpdate(waterIntake + CUP_SIZE);
@@ -47,10 +47,10 @@ export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate
           </Button>
           <div className="text-center">
             <p className="text-4xl font-bold text-foreground">
-              {waterIntake / 1000}
+              {(waterIntake / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
               <span className="text-2xl text-muted-foreground">L</span>
             </p>
-            <p className="text-sm text-muted-foreground">Meta: {waterGoal / 1000}L</p>
+            <p className="text-sm text-muted-foreground">Meta: {(waterGoal / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}L</p>
           </div>
           <Button
             variant="outline"

@@ -63,6 +63,7 @@ export default function DashboardPage() {
     if (!user || !userProfile) return;
 
     const updatedIntake = Math.max(0, newWaterIntake);
+    const originalIntake = userProfile.waterIntake;
 
     setUserProfile(prev => prev ? { ...prev, waterIntake: updatedIntake } : null);
     
@@ -77,7 +78,7 @@ export default function DashboardPage() {
             variant: "destructive"
         });
         // Reverter o estado local em caso de erro
-        setUserProfile(prev => prev ? { ...prev, waterIntake: userProfile.waterIntake } : null);
+        setUserProfile(prev => prev ? { ...prev, waterIntake: originalIntake } : null);
     }
   }, [user, userProfile, toast]);
 
@@ -87,7 +88,6 @@ export default function DashboardPage() {
       if (currentUser) {
         setUser(currentUser);
         try {
-          // --- Fetch User Profile and Update Streak/Water ---
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDoc = await getDoc(userDocRef);
           
@@ -99,26 +99,35 @@ export default function DashboardPage() {
             const today = new Date().toISOString().split('T')[0];
             const lastLogin = profileData.lastLoginDate;
 
-            if (lastLogin !== today) {
-              // Reset water intake for the new day
-              updates.waterIntake = 0;
-              profileData.waterIntake = 0;
+            // Garantir que campos de hidratação existam para usuários antigos
+            if (profileData.waterIntake === undefined) {
+                updates.waterIntake = 0;
+                profileData.waterIntake = 0;
+            }
+            if (profileData.waterGoal === undefined) {
+                updates.waterGoal = 2000; // Meta padrão
+                profileData.waterGoal = 2000;
+            }
 
-              const yesterday = new Date();
-              yesterday.setDate(yesterday.getDate() - 1);
+            if (lastLogin !== today) {
+              updates.waterIntake = 0; // Resetar consumo de água
               
               if (lastLogin && differenceInCalendarDays(new Date(), parseISO(lastLogin)) === 1) {
                 updates.currentStreak = (profileData.currentStreak || 0) + 1;
-              } else {
+              } else if (lastLogin) { // Se não for o dia seguinte, reseta o streak
                 updates.currentStreak = 1;
+              } else { // Primeiro login
+                 updates.currentStreak = 1;
               }
               updates.lastLoginDate = today;
-              
-              profileData = { ...profileData, ...updates };
-
-              await updateDoc(userDocRef, updates);
             }
-          } else {
+             
+            if (Object.keys(updates).length > 0) {
+              await updateDoc(userDocRef, updates);
+              profileData = { ...profileData, ...updates };
+            }
+
+          } else { // Usuário novo, sem perfil no Firestore
             profileData = {
               fullName: currentUser.displayName || 'Usuário',
               email: currentUser.email || '',
@@ -158,10 +167,10 @@ export default function DashboardPage() {
               setLoading(false);
           });
           
-          // Detach listener on cleanup
           return () => unsubscribeMeals();
 
         } catch (error: any) {
+          console.error("Error loading user data:", error);
           toast({
             title: "Erro ao carregar dados",
             description: error.message || "Não foi possível buscar seus dados.",
