@@ -6,12 +6,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BarChart3, History, Leaf, GlassWater, Settings, LogOut, Menu, Plus, User as UserIcon, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import type { User } from 'firebase/auth';
 import type { UserProfile } from '@/types/user';
 import type { MealData } from '@/types/meal';
 import DashboardHeader from './dashboard-header';
+import { Separator } from './ui/separator';
 
 interface AppLayoutProps {
   user: User | null;
@@ -22,9 +23,9 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-  { href: '/history', label: 'Histórico', icon: History },
+  { href: '/dashboard', label: 'Alimentação', icon: BarChart3 },
   { href: '/hydration', label: 'Hidratação', icon: GlassWater },
+  { href: '/history', label: 'Histórico', icon: History },
 ];
 
 const NavLink = ({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) => {
@@ -81,12 +82,13 @@ export default function AppLayout({ user, userProfile, onMealAdded, onProfileUpd
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="flex flex-col p-0">
-                    <div className="flex h-20 items-center border-b px-4">
+                    <SheetHeader className="flex h-20 items-center border-b px-4">
                          <Link href="/" className="flex items-center gap-2 font-semibold">
                             <Leaf className="h-7 w-7 text-primary" />
                             <span className="text-xl">NutriSmart</span>
                         </Link>
-                    </div>
+                         <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
+                    </SheetHeader>
                     <nav className="grid gap-2 text-lg font-medium p-4">
                          {navItems.map((item) => (
                             <Link key={item.href} href={item.href} onClick={() => setSheetOpen(false)}>

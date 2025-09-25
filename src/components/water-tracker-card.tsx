@@ -47,7 +47,7 @@ export default function WaterTrackerCard({ waterIntake, waterGoal, onWaterUpdate
           </Button>
           <div className="text-center">
             <p className="text-4xl font-bold text-foreground">
-              {(waterIntake / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+              {(waterIntake / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               <span className="text-2xl text-muted-foreground">L</span>
             </p>
             <p className="text-sm text-muted-foreground">Meta: {(waterGoal / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}L</p>
