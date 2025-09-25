@@ -53,8 +53,15 @@ const stravaSyncFlow = ai.defineFlow(
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
       
-      const activitiesData: StravaActivity[] = await response.json();
+      const responseData = await response.json();
+      // The actual array of activities is inside the 'body' property of the webhook response.
+      const activitiesData: StravaActivity[] = responseData.body;
       
+      if (!Array.isArray(activitiesData)) {
+          console.error('Webhook response body is not an array:', activitiesData);
+          throw new Error('Webhook response is not in the expected format (array in body).');
+      }
+
       const batch = db.batch();
       let syncedCount = 0;
 
