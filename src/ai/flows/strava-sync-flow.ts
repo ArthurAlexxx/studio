@@ -55,23 +55,24 @@ const stravaSyncFlow = ai.defineFlow(
       
       const responseData = await response.json();
       
-      // The 'body' may be a JSON string, so we need to parse it.
-      let activitiesData: StravaActivity[];
-      if (typeof responseData.body === 'string') {
-        activitiesData = JSON.parse(responseData.body);
-      } else {
-        activitiesData = responseData.body;
+      // Flexible handling of the webhook response body
+      let activitiesData = responseData.body;
+      if (typeof activitiesData === 'string') {
+        try {
+          activitiesData = JSON.parse(activitiesData);
+        } catch (e) {
+          console.error("Failed to parse response body string:", e);
+          throw new Error("The response body is a malformed JSON string.");
+        }
       }
       
-      if (!Array.isArray(activitiesData)) {
-          console.error('Webhook response body is not an array after parsing:', activitiesData);
-          throw new Error('Webhook response is not in the expected format (array in body).');
-      }
+      // Ensure activitiesData is always an array
+      const activitiesToProcess = Array.isArray(activitiesData) ? activitiesData : [activitiesData];
 
       const batch = db.batch();
       let syncedCount = 0;
 
-      activitiesData.forEach(activity => {
+      activitiesToProcess.forEach(activity => {
           if (activity && activity.id) {
               const activityRef = db.collection('users').doc(userId).collection('strava_activities').doc(String(activity.id));
               batch.set(activityRef, activity, { merge: true });
@@ -94,3 +95,4 @@ const stravaSyncFlow = ai.defineFlow(
     }
   }
 );
+
