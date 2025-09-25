@@ -26,7 +26,7 @@ const RecipeSchema = z.object({
   }),
 });
 
-export type Recipe = z.infer<typeof RecipeSchema>;
+type Recipe = z.infer<typeof RecipeSchema>;
 
 // Exported function to be called from the client
 export async function chefVirtualFlow(prompt: string): Promise<Recipe> {
@@ -41,7 +41,7 @@ const flow = ai.defineFlow(
     outputSchema: RecipeSchema,
   },
   async (prompt) => {
-    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
+    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook/d6381d21-a089-498f-8248-6d7802c0a1a5';
     
     const payload = {
       action: 'chef',
