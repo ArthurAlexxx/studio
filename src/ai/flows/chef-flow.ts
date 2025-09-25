@@ -32,6 +32,8 @@ const ChefVirtualFlowInputSchema = z.object({
   mealType: z.string(),
   preferences: z.string().optional(),
   optimize: z.boolean(),
+  targetCalories: z.number().optional(),
+  targetProtein: z.number().optional(),
 });
 
 type ChefVirtualFlowInput = z.infer<typeof ChefVirtualFlowInputSchema>;

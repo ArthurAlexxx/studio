@@ -11,8 +11,16 @@ import AppLayout from '@/components/app-layout';
 import { Loader2, Sparkles, ChefHat } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import ChefForm from '@/components/chef-form';
-import RecipeDisplay, { type Recipe } from '@/components/recipe-display';
-import { chefVirtualFlow } from '@/ai/flows/chef-flow';
+import RecipeDisplay from '@/components/recipe-display';
+import { chefVirtualFlow, type Recipe } from '@/ai/flows/chef-flow';
+
+// Define meal percentages for goal optimization
+const mealPercentages: Record<string, { calories: number; protein: number }> = {
+  'cafe-da-manha': { calories: 0.25, protein: 0.25 },
+  'almoco': { calories: 0.35, protein: 0.35 },
+  'jantar': { calories: 0.30, protein: 0.30 },
+  'lanche': { calories: 0.10, protein: 0.10 },
+};
 
 export default function ChefPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -53,8 +61,27 @@ export default function ChefPage() {
     setIsGenerating(true);
     setGeneratedRecipe(null);
     
+    let flowInput: Parameters<typeof chefVirtualFlow>[0] = { ...data };
+
+    if (data.optimize && userProfile) {
+        const mealKey = data.mealType.toLowerCase();
+        const percentages = mealPercentages[mealKey];
+
+        if (percentages) {
+            flowInput.targetCalories = Math.round(userProfile.calorieGoal * percentages.calories);
+            flowInput.targetProtein = Math.round(userProfile.proteinGoal * percentages.protein);
+        } else {
+             toast({
+                title: "Otimização não aplicável",
+                description: "Não foi possível aplicar a otimização para este tipo de refeição.",
+                variant: "destructive"
+            });
+        }
+    }
+
+
     try {
-      const recipe = await chefVirtualFlow(data);
+      const recipe = await chefVirtualFlow(flowInput);
       setGeneratedRecipe(recipe);
       toast({
           title: "Receita Gerada! 🍳",
