@@ -128,8 +128,8 @@ export default function StravaPage() {
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between items-start mb-8 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Minhas Atividades</h1>
-            <p className="text-muted-foreground max-w-2xl mt-2">Suas atividades físicas importadas do Strava. Clique para buscar e salvar as atividades mais recentes.</p>
+            <h1 className="text-3xl font-bold text-foreground">Sincronização com Strava</h1>
+            <p className="text-muted-foreground max-w-2xl mt-2">Veja suas atividades físicas importadas do Strava. Clique para buscar e salvar as atividades mais recentes.</p>
           </div>
           <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md mt-4 sm:mt-0 shrink-0">
               {syncing ? (
@@ -140,7 +140,7 @@ export default function StravaPage() {
               ) : (
                 <>
                   <Zap className="mr-2 h-5 w-5" />
-                  Sincronizar com Strava
+                  Sincronizar Atividades
                 </>
               )}
             </Button>
@@ -154,10 +154,10 @@ export default function StravaPage() {
           </div>
         ) : !loading && (
            <Card className="max-w-2xl mx-auto shadow-sm rounded-2xl animate-fade-in mt-12" style={{animationDelay: '150ms'}}>
-            <CardHeader className="text-center">
+            <CardHeader className="text-center p-8">
               <HeartPulse className="h-12 w-12 text-primary mx-auto mb-4" />
-              <CardTitle className="text-2xl">Nenhuma Atividade Carregada</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl">Nenhuma Atividade Encontrada</CardTitle>
+              <CardDescription className="mt-2">
                 Clique no botão de sincronização para buscar e exibir suas atividades do Strava.
               </CardDescription>
             </CardHeader>
