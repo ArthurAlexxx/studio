@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import type { StravaActivity } from '@/types/strava';
 
@@ -36,7 +36,6 @@ const stravaSyncFlow = ai.defineFlow(
   async ({ userId }) => {
     // Initialize Firebase Admin SDK within the flow
     if (!getApps().length) {
-      // The serviceAccountJson is now directly imported, no need to parse from environment variables
       const serviceAccount = serviceAccountJson as any;
       initializeApp({
         credential: cert(serviceAccount),
@@ -55,10 +54,10 @@ const stravaSyncFlow = ai.defineFlow(
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
 
-      let data = await response.json();
+      const data = await response.json();
       
       // Ensure data is an array
-      let activities: StravaActivity[] = Array.isArray(data) ? data : [data];
+      const activities: StravaActivity[] = Array.isArray(data) ? data : [data];
 
       if (!activities || activities.length === 0) {
         return { syncedCount: 0 };
