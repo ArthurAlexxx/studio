@@ -10,7 +10,7 @@ import { auth, db } from '@/lib/firebase/client';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, HeartPulse, Zap } from 'lucide-react';
+import { Loader2, HeartPulse, RefreshCw } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import { stravaSync } from '@/ai/flows/strava-sync-flow';
 import type { StravaActivity } from '@/types/strava';
@@ -165,24 +165,9 @@ export default function StravaPage() {
         onProfileUpdate={handleProfileUpdate}
     >
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start mb-8 animate-fade-in">
-          <div>
+        <div className="mb-8 animate-fade-in">
             <h1 className="text-3xl font-bold text-foreground">Análise de Atividades Físicas</h1>
             <p className="text-muted-foreground max-w-2xl mt-2">Suas estatísticas, progresso e histórico de atividades importadas do Strava.</p>
-          </div>
-          <Button onClick={handleSync} disabled={syncing} size="lg" className="shadow-md mt-4 sm:mt-0 shrink-0">
-              {syncing ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Sincronizando...
-                </>
-              ) : (
-                <>
-                  <Zap className="mr-2 h-5 w-5" />
-                  Sincronizar com Strava
-                </>
-              )}
-            </Button>
         </div>
         
         {activities.length > 0 && (
@@ -198,7 +183,20 @@ export default function StravaPage() {
         )}
 
         <div className="mt-12">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Histórico de Atividades</h2>
+            <div className="flex justify-between items-center mb-4">
+                 <h2 className="text-2xl font-bold text-foreground">Histórico de Atividades</h2>
+                 <Button onClick={handleSync} disabled={syncing} variant="outline" className="shrink-0">
+                    {syncing ? (
+                        <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sincronizando...
+                        </>
+                    ) : (
+                       'Sincronizar'
+                    )}
+                </Button>
+            </div>
+           
             {activities.length > 0 ? (
             <div className="flex flex-col gap-4 animate-fade-in">
                 {activities.map(activity => (
