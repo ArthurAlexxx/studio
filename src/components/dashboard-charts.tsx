@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Cell } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 const caloriesChartConfig = {
@@ -44,25 +44,24 @@ interface DashboardChartsProps {
 export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
   if (chartType === 'calories') {
     return (
-      <ChartContainer config={caloriesChartConfig} className="min-h-[250px] w-full">
-        <ResponsiveContainer width="100%" height={250}>
-          <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="colorCalories" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3"/>
-            <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} stroke="#888888" fontSize={12} />
-            <YAxis tickLine={false} axisLine={false} tickMargin={10} stroke="#888888" fontSize={12} />
-            <ChartTooltip
-                cursor={{ stroke: 'hsl(var(--chart-1))', strokeWidth: 2, strokeDasharray: '3 3' }}
-                content={<ChartTooltipContent indicator="dot" />}
-            />
-             <Area type="monotone" dataKey="calories" stroke="hsl(var(--chart-1))" fillOpacity={1} fill="url(#colorCalories)" strokeWidth={2} />
-          </AreaChart>
-        </ResponsiveContainer>
+       <ChartContainer
+        config={caloriesChartConfig}
+        className="mx-auto aspect-square max-h-[250px]"
+      >
+        <RadarChart data={data}>
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent indicator="dot" />}
+          />
+          <PolarAngleAxis dataKey="day" className='text-xs'/>
+          <PolarGrid gridType="circle" />
+          <Radar
+            dataKey="calories"
+            fill="var(--color-calories)"
+            fillOpacity={0.6}
+            stroke="var(--color-calories)"
+          />
+        </RadarChart>
       </ChartContainer>
     );
   }
