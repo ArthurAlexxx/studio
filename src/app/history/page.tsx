@@ -160,12 +160,11 @@ export default function HistoryPage() {
         // Fetch Hydration for the month
         const hydrationQuery = query(
             collection(db, 'hydration_entries'),
-            where("userId", "==", user.uid),
-            where("date", ">=", startDateString),
-            where("date", "<=", endDateString)
+            where("userId", "==", user.uid)
         );
         const hydrationDocs = await getDocs(hydrationQuery);
-        const hydration = hydrationDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+        const hydration = hydrationDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry))
+            .filter(entry => entry.date >= startDateString && entry.date <= endDateString);
         setHydrationEntries(hydration);
         
         setLoading(false);
