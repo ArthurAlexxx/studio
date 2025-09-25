@@ -11,19 +11,6 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import type { StravaActivity } from '@/types/strava';
 
-// Inicialização do Firebase Admin SDK dentro do fluxo
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-  : undefined;
-
-if (!getApps().length) {
-  initializeApp({
-    credential: serviceAccount ? cert(serviceAccount) : undefined,
-  });
-}
-
-const db = getFirestore();
-
 const StravaSyncInputSchema = z.object({
   userId: z.string(),
 });
@@ -41,6 +28,18 @@ const stravaSyncFlow = ai.defineFlow(
     outputSchema: z.void(),
   },
   async ({ userId }) => {
+    // Inicialização do Firebase Admin SDK DENTRO do fluxo
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+      : undefined;
+
+    if (!getApps().length) {
+      initializeApp({
+        credential: serviceAccount ? cert(serviceAccount) : undefined,
+      });
+    }
+
+    const db = getFirestore();
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/e70734fa-c464-4ea5-828b-d1b68da30a41';
 
     try {
@@ -49,17 +48,21 @@ const stravaSyncFlow = ai.defineFlow(
       if (response.ok) {
         let activities: StravaActivity[] = await response.json();
         
+        // O webhook pode retornar um array dentro de outro array
         if (Array.isArray(activities) && activities.length > 0 && Array.isArray(activities[0])) {
             activities = activities[0]; 
         } else if (!Array.isArray(activities)) {
+            // Se a resposta for um único objeto, coloque-o em um array
             activities = [activities as any];
         }
 
         if (activities && activities.length > 0) {
             const batch = db.batch();
             activities.forEach(activity => {
-                const activityRef = db.collection('users').doc(userId).collection('strava_activities').doc(String(activity.id));
-                batch.set(activityRef, activity, { merge: true });
+                if (activity && activity.id) {
+                    const activityRef = db.collection('users').doc(userId).collection('strava_activities').doc(String(activity.id));
+                    batch.set(activityRef, activity, { merge: true });
+                }
             });
             await batch.commit();
         }
