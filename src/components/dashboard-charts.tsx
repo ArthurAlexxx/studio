@@ -1,3 +1,4 @@
+// src/components/dashboard-charts.tsx
 'use client';
 
 import * as React from 'react';
@@ -177,8 +178,8 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
               />
             </Pie>
              <ChartLegend
-                content={<ChartLegendContent nameKey="name" />}
-                className="-mt-4"
+                content={<ChartLegendContent nameKey="name" className="flex-wrap" />}
+                className="mt-2"
              />
           </PieChart>
         </ResponsiveContainer>
