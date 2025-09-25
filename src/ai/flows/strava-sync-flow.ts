@@ -7,10 +7,12 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import type { StravaActivity } from '@/types/strava';
-import serviceAccount from '@/lib/firebase/service-account.json';
+
+// Import the service account key from the dedicated file
+import serviceAccountJson from '@/lib/firebase/service-account.json';
 
 const StravaSyncInputSchema = z.object({
   userId: z.string().describe('The ID of the user to associate the activities with.'),
@@ -32,7 +34,10 @@ const stravaSyncFlow = ai.defineFlow(
     outputSchema: StravaSyncOutputSchema,
   },
   async ({ userId }) => {
+    // Initialize Firebase Admin SDK within the flow
     if (!getApps().length) {
+      // The serviceAccountJson is now directly imported, no need to parse from environment variables
+      const serviceAccount = serviceAccountJson as any;
       initializeApp({
         credential: cert(serviceAccount),
       });
@@ -52,6 +57,7 @@ const stravaSyncFlow = ai.defineFlow(
 
       let data = await response.json();
       
+      // Ensure data is an array
       let activities: StravaActivity[] = Array.isArray(data) ? data : [data];
 
       if (!activities || activities.length === 0) {
@@ -62,6 +68,7 @@ const stravaSyncFlow = ai.defineFlow(
       const userActivitiesRef = db.collection('users').doc(userId).collection('strava_activities');
       
       activities.forEach(activity => {
+        // Ensure activity and activity.id are valid before creating a doc
         if (activity && activity.id) {
             const docRef = userActivitiesRef.doc(String(activity.id));
             batch.set(docRef, activity);
