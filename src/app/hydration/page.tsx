@@ -56,20 +56,16 @@ export default function HydrationPage() {
   }, [user, todayHydration, toast]);
 
   const fetchHistory = useCallback(async (userId: string) => {
-    // Consulta simplificada para evitar erro de índice
     const q = query(
       collection(db, 'hydration_entries'),
       where('userId', '==', userId),
-      limit(30) // Limita aos últimos 30 registros por performance
+      orderBy('date', 'desc'),
+      limit(30)
     );
 
     try {
       const querySnapshot = await getDocs(q);
       const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-      
-      // Ordenação feita no cliente
-      history.sort((a, b) => b.date.localeCompare(a.date));
-
       setHydrationHistory(history);
     } catch(e) {
       console.error(e);
@@ -171,7 +167,14 @@ export default function HydrationPage() {
   const summaryStats = useMemo(() => {
     if (hydrationHistory.length === 0) return { avgIntake: 0, goalMetPercentage: 0 };
     
-    const last7DaysHistory = hydrationHistory.slice(0, 7);
+    const last7DaysHistory = hydrationHistory.filter(h => {
+        const entryDate = new Date(h.date + 'T00:00:00');
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        return entryDate >= sevenDaysAgo && entryDate <= today;
+    });
+
 
     const totalIntake = last7DaysHistory.reduce((acc, curr) => acc + curr.intake, 0);
     const daysGoalMet = last7DaysHistory.filter(d => d.intake >= d.goal).length;
@@ -183,33 +186,47 @@ export default function HydrationPage() {
   }, [hydrationHistory]);
 
   const currentStreak = useMemo(() => {
-      let streak = 0;
-      const sortedHistory = [...hydrationHistory].sort((a,b) => b.date.localeCompare(a.date));
-      const todayStr = getLocalDateString();
-      const yesterdayStr = getLocalDateString(new Date(new Date().setDate(new Date().getDate() - 1)));
-      let dayIndex = 0;
+    const sortedHistory = [...hydrationHistory].sort((a, b) => b.date.localeCompare(a.date));
+    if (sortedHistory.length === 0) {
+      return 0;
+    }
 
-      if(sortedHistory[0]?.date === todayStr && sortedHistory[0]?.intake >= sortedHistory[0]?.goal) {
-          streak++;
-          dayIndex++;
+    let streak = 0;
+    let expectedDate = new Date();
+
+    // Check today first
+    const todayStr = getLocalDateString(expectedDate);
+    const todayEntry = sortedHistory.find(e => e.date === todayStr);
+
+    if (todayEntry && todayEntry.intake >= todayEntry.goal) {
+      streak++;
+      expectedDate.setDate(expectedDate.getDate() - 1);
+    } else if (todayEntry && todayEntry.intake < todayEntry.goal) {
+      // If today goal is not met, but it is today, check from yesterday
+      expectedDate.setDate(expectedDate.getDate() - 1);
+    } else if (!todayEntry) {
+      // If there is no entry for today, check from yesterday, streak is 0
+    }
+    
+    // Check consecutive previous days
+    const remainingHistory = sortedHistory.filter(e => e.date < todayStr);
+
+    for (const entry of remainingHistory) {
+      const expectedDateStr = getLocalDateString(expectedDate);
+      if (entry.date === expectedDateStr && entry.intake >= entry.goal) {
+        streak++;
+        expectedDate.setDate(expectedDate.getDate() - 1);
+      } else if (entry.date === expectedDateStr && entry.intake < entry.goal) {
+        break; // Streak is broken
+      } else if (entry.date < expectedDateStr) {
+        // A day is missing, streak is broken
+        break;
       }
+    }
 
-      for (let i = dayIndex; i < sortedHistory.length; i++) {
-         const entryDate = new Date(sortedHistory[i].date + 'T00:00:00'); // Prevent timezone shifts
-         const expectedDate = new Date();
-         expectedDate.setDate(expectedDate.getDate() - (streak > 0 ? streak : (dayIndex === 0 ? 1 : 0)) - i + dayIndex);
-
-         const expectedDateStr = getLocalDateString(expectedDate);
-
-         if (sortedHistory[i].date === expectedDateStr && sortedHistory[i].intake >= sortedHistory[i].goal) {
-             streak++;
-         } else {
-             break;
-         }
-      }
-
-      return streak;
+    return streak;
   }, [hydrationHistory]);
+
 
   if (loading || !userProfile || !todayHydration) {
     return (

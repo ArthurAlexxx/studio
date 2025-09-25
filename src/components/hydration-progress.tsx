@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { type ChartConfig, ChartContainer } from '@/components/ui/chart';
-import { Flame, Target, Trophy, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { Flame, Target, Trophy } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 interface HydrationProgressProps {
   weeklyData: {
@@ -38,7 +37,7 @@ const chartConfig = {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const fullDate = format(data.date, "PPP", {});
+    const fullDate = format(new Date(data.date), "PPP", {});
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
         <p className="font-bold mb-1">{fullDate}</p>
