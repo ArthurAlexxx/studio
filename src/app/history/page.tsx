@@ -22,6 +22,9 @@ import type { MealEntry } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
 import type { HydrationEntry } from '@/types/hydration';
 
+const getLocalDateString = (date = new Date()) => {
+    return format(date, 'yyyy-MM-dd');
+}
 
 export default function HistoryPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -73,7 +76,7 @@ export default function HistoryPage() {
     }
 
     setLoading(true);
-    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    const formattedDate = getLocalDateString(selectedDate);
 
     // Fetch Meals
     const mealsQuery = query(
@@ -88,7 +91,7 @@ export default function HistoryPage() {
         ...(doc.data() as Omit<MealEntry, 'id'>)
       }));
       setMealEntries(loadedEntries);
-      setLoading(false); // Move loading to here to ensure UI updates after meals are fetched
+       if(hydrationEntry !== undefined) setLoading(false);
     }, (error) => {
       console.error("Error fetching historical meals:", error);
       toast({
@@ -96,29 +99,29 @@ export default function HistoryPage() {
         description: "Não foi possível buscar as refeições para a data selecionada.",
         variant: "destructive"
       });
-      setLoading(false);
+       if(hydrationEntry !== undefined) setLoading(false);
     });
 
     // Fetch Hydration for the selected date
-    const fetchHydration = async () => {
-        const hydrationDocRef = doc(db, 'hydration_entries', `${user.uid}_${formattedDate}`);
-        try {
-            const docSnap = await getDoc(hydrationDocRef);
-            if (docSnap.exists()) {
-                setHydrationEntry(docSnap.data() as HydrationEntry);
-            } else {
-                setHydrationEntry(null);
-            }
-        } catch (error) {
-            console.error("Error fetching hydration entry:", error);
-            setHydrationEntry(null); // Ensure it's null on error
-        }
-    };
+    const hydrationDocId = `${user.uid}_${formattedDate}`;
+    const hydrationDocRef = doc(db, 'hydration_entries', hydrationDocId);
     
-    fetchHydration();
+    const unsubscribeHydration = onSnapshot(hydrationDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setHydrationEntry({ id: docSnap.id, ...docSnap.data() } as HydrationEntry);
+        } else {
+            setHydrationEntry(null);
+        }
+        if (mealEntries !== undefined) setLoading(false);
+    }, (error) => {
+        console.error("Error fetching hydration entry:", error);
+        setHydrationEntry(null); // Ensure it's null on error
+        if (mealEntries !== undefined) setLoading(false);
+    });
 
     return () => {
         unsubscribeMeals();
+        unsubscribeHydration();
     };
   }, [user, selectedDate, toast]);
   

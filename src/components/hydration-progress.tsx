@@ -5,14 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { type ChartConfig, ChartContainer } from '@/components/ui/chart';
-import { Flame, Target, Trophy } from 'lucide-react';
+import { Flame, Target, Trophy, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface HydrationProgressProps {
   weeklyData: {
     date: Date;
     day: string;
+    dayOfMonth: string;
     intake: number;
     goal: number;
+    isComplete: boolean;
+    isToday: boolean;
   }[];
   averageIntake: number;
   goalMetPercentage: number;
@@ -33,9 +38,10 @@ const chartConfig = {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    const fullDate = format(data.date, "PPP", {});
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
-        <p className="font-bold mb-1">{label}</p>
+        <p className="font-bold mb-1">{fullDate}</p>
         <p>Consumido: <span className="font-semibold text-primary">{(data.intake / 1000).toFixed(2)}L</span></p>
         <p>Meta: <span className="font-semibold">{(data.goal / 1000).toFixed(2)}L</span></p>
       </div>
@@ -65,7 +71,7 @@ export default function HydrationProgress({ weeklyData, averageIntake, goalMetPe
   return (
     <Card className="shadow-sm rounded-2xl animate-fade-in-down" style={{ animationDelay: '200ms' }}>
       <CardHeader>
-        <CardTitle className="font-semibold text-xl">Seu Progresso Semanal</CardTitle>
+        <CardTitle className="font-semibold text-xl">Seu Progresso de Hidratação</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
 
@@ -73,21 +79,21 @@ export default function HydrationProgress({ weeklyData, averageIntake, goalMetPe
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              <StatCard
                 icon={Flame}
-                title="Média Diária"
+                title="Média Diária (7d)"
                 value={(averageIntake / 1000).toFixed(2)}
                 unit="L"
                 color="bg-sky-500"
             />
             <StatCard
                 icon={Target}
-                title="Consistência"
+                title="Consistência (7d)"
                 value={goalMetPercentage.toFixed(0)}
                 unit="%"
                 color="bg-green-500"
             />
             <StatCard
                 icon={Trophy}
-                title="Sequência"
+                title="Sequência Atual"
                 value={streak.toString()}
                 unit={streak === 1 ? 'dia' : 'dias'}
                 color="bg-amber-500"
