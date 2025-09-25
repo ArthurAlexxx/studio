@@ -54,12 +54,9 @@ const stravaSyncFlow = ai.defineFlow(
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const activities: StravaActivity[] = await response.json();
       
-      // Ensure data is an array
-      const activities: StravaActivity[] = Array.isArray(data) ? data : [data];
-
-      if (!activities || activities.length === 0) {
+      if (!Array.isArray(activities) || activities.length === 0) {
         return { syncedCount: 0 };
       }
       
