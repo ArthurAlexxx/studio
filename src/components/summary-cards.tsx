@@ -70,7 +70,7 @@ export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal,
   ];
 
   return (
-    <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${hideStreak ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${hideStreak ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-6 col-span-1`}>
       {summaryCardsData.filter(card => card.isVisible).map((card, index) => (
         <Card key={card.title} className="shadow-sm rounded-2xl animate-fade-in" style={{animationDelay: `${index * 100}ms`}}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -78,9 +78,9 @@ export default function SummaryCards({ totalNutrients, calorieGoal, proteinGoal,
             <card.icon className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <div className="text-2xl font-bold">
                 {card.value}
-                <span className="text-xl text-muted-foreground ml-1">{card.unit || card.description}</span>
+                <span className="text-lg text-muted-foreground ml-1">{card.unit || card.description}</span>
             </div>
             {card.goal ? (
                 <p className="text-xs text-muted-foreground">Meta: {card.goal} {card.unit}</p>

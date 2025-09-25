@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -16,14 +16,17 @@ import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import SummaryCards from '@/components/summary-cards';
 import AppLayout from '@/components/app-layout';
+import WaterIntakeSummary from '@/components/water-intake-summary';
 
 import type { MealEntry } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
+import type { HydrationEntry } from '@/types/hydration';
 
 
 export default function HistoryPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
+  const [hydrationEntry, setHydrationEntry] = useState<HydrationEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -64,6 +67,7 @@ export default function HistoryPage() {
   useEffect(() => {
     if (!user || !selectedDate) {
       setMealEntries([]);
+      setHydrationEntry(null);
       setLoading(false);
       return;
     }
@@ -71,30 +75,49 @@ export default function HistoryPage() {
     setLoading(true);
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-    const q = query(
+    // Fetch Meals
+    const mealsQuery = query(
       collection(db, "meal_entries"),
       where("userId", "==", user.uid),
       where("date", "==", formattedDate)
     );
 
-    const unsubscribeMeals = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeMeals = onSnapshot(mealsQuery, (querySnapshot) => {
       const loadedEntries = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...(doc.data() as Omit<MealEntry, 'id'>)
       }));
       setMealEntries(loadedEntries);
-      setLoading(false);
     }, (error) => {
       console.error("Error fetching historical meals:", error);
       toast({
-        title: "Erro ao carregar histórico",
+        title: "Erro ao carregar refeições",
         description: "Não foi possível buscar as refeições para a data selecionada.",
         variant: "destructive"
       });
-      setLoading(false);
     });
 
-    return () => unsubscribeMeals();
+    // Fetch Hydration
+    const fetchHydration = async () => {
+        try {
+            const hydrationDocRef = doc(db, 'hydration_entries', `${user.uid}_${formattedDate}`);
+            const docSnap = await getDoc(hydrationDocRef);
+            if (docSnap.exists()) {
+                setHydrationEntry(docSnap.data() as HydrationEntry);
+            } else {
+                setHydrationEntry(null);
+            }
+        } catch (error) {
+            console.error("Error fetching hydration entry:", error);
+            setHydrationEntry(null);
+        }
+    };
+    
+    Promise.all([fetchHydration()]).finally(() => setLoading(false));
+
+    return () => {
+        unsubscribeMeals();
+    };
   }, [user, selectedDate, toast]);
   
   const handleMealDeleted = () => {
@@ -139,18 +162,18 @@ export default function HistoryPage() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-1">
-                <Card className="shadow-sm rounded-2xl">
-                        <CardContent className="p-2">
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                className="w-full"
-                                locale={ptBR}
-                                disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
-                            />
-                        </CardContent>
-                </Card>
+                    <Card className="shadow-sm rounded-2xl">
+                            <CardContent className="p-2">
+                                <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={setSelectedDate}
+                                    className="w-full"
+                                    locale={ptBR}
+                                    disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
+                                />
+                            </CardContent>
+                    </Card>
                 </div>
                 <div className="lg:col-span-2 space-y-8">
                 {loading ? (
@@ -159,12 +182,15 @@ export default function HistoryPage() {
                     </div>
                 ) : (
                     <>
-                        <SummaryCards
-                            totalNutrients={dailyTotals}
-                            calorieGoal={userProfile.calorieGoal}
-                            proteinGoal={userProfile.proteinGoal}
-                            hideStreak={true}
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <SummaryCards
+                                totalNutrients={dailyTotals}
+                                calorieGoal={userProfile.calorieGoal}
+                                proteinGoal={userProfile.proteinGoal}
+                                hideStreak={true}
+                            />
+                             <WaterIntakeSummary hydrationEntry={hydrationEntry} />
+                        </div>
                         <ConsumedFoodsList 
                             mealEntries={mealEntries} 
                             onMealDeleted={handleMealDeleted}
