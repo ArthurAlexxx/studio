@@ -92,7 +92,7 @@ export default function Header() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => router.push('/dashboard')}>
                        <BarChart3 className="mr-2 h-4 w-4" />
-                      <span>Meu Dashboard</span>
+                      <span>Visão Geral</span>
                     </DropdownMenuItem>
                      <DropdownMenuItem onClick={() => router.push('/history')}>
                       <History className="mr-2 h-4 w-4" />

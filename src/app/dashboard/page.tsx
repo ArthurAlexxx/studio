@@ -1,40 +1,42 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { MealEntry } from '@/types/meal';
 import type { UserProfile } from '@/types/user';
+import type { HydrationEntry } from '@/types/hydration';
 import DashboardMetrics from '@/components/dashboard-metrics';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import AppLayout from '@/components/app-layout';
+import WaterTrackerCard from '@/components/water-tracker-card';
 
 // Função para obter data local no formato YYYY-MM-DD
-const getLocalDateString = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+const getLocalDateString = (date = new Date()) => {
+    return format(date, 'yyyy-MM-dd');
 }
 
 export default function DashboardPage() {
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
+  const [hydrationHistory, setHydrationHistory] = useState<HydrationEntry[]>([]);
+  const [todayHydration, setTodayHydration] = useState<HydrationEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [areMealsLoaded, setAreMealsLoaded] = useState(false);
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+  const [isHydrationLoaded, setIsHydrationLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
   const handleMealAdded = useCallback(() => {
-    // A lógica de atualização agora é tratada pelo onSnapshot
     toast({
         title: 'Refeição Adicionada! ✅',
         description: 'Sua refeição foi registrada com sucesso.',
@@ -68,12 +70,31 @@ export default function DashboardPage() {
     });
   }, []);
 
+  const handleWaterUpdate = useCallback(async (newWaterIntake: number) => {
+    if (!user || !todayHydration) return;
+    
+    const updatedIntake = Math.max(0, newWaterIntake);
+    const todayDocRef = doc(db, 'hydration_entries', todayHydration.id);
+
+    try {
+      await updateDoc(todayDocRef, { intake: updatedIntake });
+    } catch (error: any) {
+      console.error("Failed to update water intake:", error);
+      toast({
+        title: "Erro ao atualizar hidratação",
+        description: "Não foi possível salvar seu consumo de água.",
+        variant: "destructive"
+      });
+    }
+  }, [user, todayHydration, toast]);
+
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        const userDocRef = doc(db, 'users', currentUser.uid);
 
+        // --- PROFILE LISTENER ---
+        const userDocRef = doc(db, 'users', currentUser.uid);
         const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
             if (doc.exists()) {
                 setUserProfile(doc.data() as UserProfile);
@@ -83,23 +104,17 @@ export default function DashboardPage() {
              if (!isProfileLoaded) setIsProfileLoaded(true);
         }, (error) => {
             console.error("Error fetching user profile:", error);
-            toast({
-                title: "Erro ao carregar perfil",
-                description: "Não foi possível buscar seu perfil em tempo real.",
-                variant: "destructive"
-            });
-             if (!isProfileLoaded) setIsProfileLoaded(true);
+            if (!isProfileLoaded) setIsProfileLoaded(true);
         });
 
-        // --- Setup Real-time Listener for Meals ---
+        // --- MEALS LISTENER ---
         const todayStr = getLocalDateString();
-        const q = query(
+        const mealsQuery = query(
           collection(db, "meal_entries"),
           where("userId", "==", currentUser.uid),
           where("date", "==", todayStr)
         );
-        
-        const unsubscribeMeals = onSnapshot(q, (querySnapshot) => {
+        const unsubscribeMeals = onSnapshot(mealsQuery, (querySnapshot) => {
             const loadedEntries = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...(doc.data() as Omit<MealEntry, 'id'>)
@@ -108,37 +123,60 @@ export default function DashboardPage() {
             if(!areMealsLoaded) setAreMealsLoaded(true);
         }, (error) => {
             console.error("Error fetching meals in real-time:", error);
-            toast({
-              title: "Erro ao carregar refeições",
-              description: "Não foi possível buscar suas refeições em tempo real.",
-              variant: "destructive"
-            });
             if(!areMealsLoaded) setAreMealsLoaded(true);
+        });
+
+        // --- HYDRATION LISTENER ---
+        const todayDocId = `${currentUser.uid}_${todayStr}`;
+        const todayDocRef = doc(db, 'hydration_entries', todayDocId);
+        const unsubscribeHydration = onSnapshot(todayDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = { id: docSnap.id, ...docSnap.data() } as HydrationEntry;
+                setTodayHydration(data);
+            } else {
+                // Use a local variable for profile to avoid stale state
+                const currentGoal = userProfile?.waterGoal || 2000;
+                const newEntry: Omit<HydrationEntry, 'id'> = {
+                    userId: currentUser.uid,
+                    date: todayStr,
+                    intake: 0,
+                    goal: currentGoal,
+                };
+                setDoc(todayDocRef, newEntry).then(() => {
+                    setTodayHydration({ id: todayDocId, ...newEntry });
+                });
+            }
+            if (!isHydrationLoaded) setIsHydrationLoaded(true);
+        }, (error) => {
+            console.error("Error fetching today's hydration:", error);
+            if (!isHydrationLoaded) setIsHydrationLoaded(true);
         });
         
         return () => {
             unsubscribeProfile();
             unsubscribeMeals();
+            unsubscribeHydration();
         };
 
       } else {
         setUser(null);
         setMealEntries([]);
         setUserProfile(null);
+        setTodayHydration(null);
         router.push('/login');
       }
     });
 
     return () => unsubscribeAuth();
-  }, [router, toast, isProfileLoaded, areMealsLoaded]);
+  }, [router, isProfileLoaded, areMealsLoaded, isHydrationLoaded, userProfile?.waterGoal]);
 
   useEffect(() => {
-    if (isProfileLoaded && areMealsLoaded) {
+    if (isProfileLoaded && areMealsLoaded && isHydrationLoaded) {
       setLoading(false);
     }
-  }, [isProfileLoaded, areMealsLoaded]);
+  }, [isProfileLoaded, areMealsLoaded, isHydrationLoaded]);
   
-  const initialLoading = loading || !user || !userProfile;
+  const initialLoading = loading || !user || !userProfile || !todayHydration;
 
   if (initialLoading) {
     return (
@@ -149,7 +187,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user || !userProfile) {
+  if (!user || !userProfile || !todayHydration) {
     return null;
   }
   
@@ -164,11 +202,21 @@ export default function DashboardPage() {
     >
         <div className="container mx-auto py-8 px-4 sm:px-6 md:px-8">
             <DashboardMetrics meals={mealsToday} userProfile={userProfile} />
-            <div className="mt-8">
-              <ConsumedFoodsList 
-                mealEntries={mealEntries} 
-                onMealDeleted={handleMealDeleted}
-              />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                <div className="lg:col-span-2">
+                    <ConsumedFoodsList 
+                        mealEntries={mealEntries} 
+                        onMealDeleted={handleMealDeleted}
+                    />
+                </div>
+                <div className="lg:col-span-1">
+                    <WaterTrackerCard
+                        waterIntake={todayHydration.intake}
+                        waterGoal={todayHydration.goal}
+                        onWaterUpdate={handleWaterUpdate}
+                    />
+                </div>
             </div>
         </div>
     </AppLayout>

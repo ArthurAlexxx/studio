@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, History, Leaf, GlassWater, Settings, LogOut, Menu, Plus, User as UserIcon, ChevronDown, X } from 'lucide-react';
+import { BarChart3, History, Leaf, Settings, LogOut, Menu, Plus, User as UserIcon, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -23,8 +23,7 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { href: '/dashboard', label: 'Alimentação', icon: BarChart3 },
-  { href: '/hydration', label: 'Hidratação', icon: GlassWater },
+  { href: '/dashboard', label: 'Visão Geral', icon: BarChart3 },
   { href: '/history', label: 'Histórico', icon: History },
 ];
 
