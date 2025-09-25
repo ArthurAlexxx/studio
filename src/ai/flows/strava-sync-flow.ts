@@ -3,12 +3,10 @@
  * @fileOverview Um fluxo para sincronizar atividades do Strava.
  *
  * - stravaSync - Uma função que aciona um webhook para iniciar a sincronização e retorna as atividades.
- * - StravaSyncOutput - O tipo de retorno para a função stravaSync.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { StravaActivity } from '@/types/strava';
 
 const StravaActivitySchema = z.object({
     id: z.number(),
@@ -21,9 +19,9 @@ const StravaActivitySchema = z.object({
     data_inicio_local: z.string(),
 });
 
-export const StravaSyncOutputSchema = z.array(StravaActivitySchema);
+const StravaSyncOutputSchema = z.array(StravaActivitySchema);
 
-export type StravaSyncOutput = z.infer<typeof StravaSyncOutputSchema>;
+type StravaSyncOutput = z.infer<typeof StravaSyncOutputSchema>;
 
 export async function stravaSync(): Promise<StravaSyncOutput> {
   return stravaSyncFlow();
