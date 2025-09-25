@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -126,10 +126,12 @@ export default function DashboardPage() {
             if(!areMealsLoaded) setAreMealsLoaded(true);
         });
 
-        // --- HYDRATION LISTENER ---
+        // --- HYDRATION LISTENERS ---
         const todayDocId = `${currentUser.uid}_${todayStr}`;
         const todayDocRef = doc(db, 'hydration_entries', todayDocId);
-        const unsubscribeHydration = onSnapshot(todayDocRef, (docSnap) => {
+        
+        // Listener for today's hydration
+        const unsubscribeTodayHydration = onSnapshot(todayDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = { id: docSnap.id, ...docSnap.data() } as HydrationEntry;
                 setTodayHydration(data);
@@ -152,10 +154,26 @@ export default function DashboardPage() {
             if (!isHydrationLoaded) setIsHydrationLoaded(true);
         });
         
+        // Fetch weekly hydration history
+        const weekAgoDate = getLocalDateString(subDays(new Date(), 6));
+        const weeklyHydrationQuery = query(
+            collection(db, 'hydration_entries'),
+            where("userId", "==", currentUser.uid),
+            where("date", ">=", weekAgoDate),
+            orderBy("date", "desc")
+        );
+        const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (querySnapshot) => {
+            const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
+            setHydrationHistory(history);
+        }, (error) => {
+            console.error("Error fetching weekly hydration:", error);
+        });
+        
         return () => {
             unsubscribeProfile();
             unsubscribeMeals();
-            unsubscribeHydration();
+            unsubscribeTodayHydration();
+            unsubscribeWeeklyHydration();
         };
 
       } else {
@@ -163,6 +181,7 @@ export default function DashboardPage() {
         setMealEntries([]);
         setUserProfile(null);
         setTodayHydration(null);
+        setHydrationHistory([]);
         router.push('/login');
       }
     });
@@ -201,7 +220,11 @@ export default function DashboardPage() {
         onProfileUpdate={handleProfileUpdate}
     >
         <div className="container mx-auto py-8 px-4 sm:px-6 md:px-8">
-            <DashboardMetrics meals={mealsToday} userProfile={userProfile} />
+            <DashboardMetrics 
+                meals={mealsToday}
+                userProfile={userProfile}
+                hydrationHistory={hydrationHistory}
+            />
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
                 <div className="lg:col-span-2">

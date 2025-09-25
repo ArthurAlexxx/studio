@@ -11,6 +11,13 @@ const caloriesChartConfig = {
   },
 } satisfies ChartConfig;
 
+const hydrationChartConfig = {
+  intake: {
+    label: 'Consumo (ml)',
+    color: 'hsl(var(--chart-2))',
+  },
+} satisfies ChartConfig;
+
 const macrosChartConfig = {
   value: {
     label: 'Gramas',
@@ -30,7 +37,7 @@ const macrosChartConfig = {
 } satisfies ChartConfig;
 
 interface DashboardChartsProps {
-    chartType: 'calories' | 'macros';
+    chartType: 'calories' | 'macros' | 'hydration';
     data: any[];
 }
 
@@ -49,6 +56,27 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
             />
             <Bar dataKey="calories" fill="hsl(var(--chart-1))" radius={[5, 5, 0, 0]}>
               <LabelList dataKey="calories" position="top" offset={8} className="fill-foreground" fontSize={12} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    );
+  }
+  
+  if (chartType === 'hydration') {
+    return (
+      <ChartContainer config={hydrationChartConfig} className="min-h-[250px] w-full">
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3"/>
+            <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} stroke="#888888" fontSize={12} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={10} stroke="#888888" fontSize={12} unit="ml"/>
+            <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+            />
+            <Bar dataKey="intake" fill="hsl(var(--chart-2))" radius={[5, 5, 0, 0]}>
+              <LabelList dataKey="intake" position="top" offset={8} className="fill-foreground" fontSize={12} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
