@@ -3,26 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Utensils, Flame, Beef, Wheat, Donut, CheckSquare, Clock, Users, Soup } from 'lucide-react';
-
-export interface Recipe {
-  title: string;
-  description: string;
-  prepTime: string;
-  cookTime: string;
-  servings: string;
-  ingredients: string[];
-  instructions: string[];
-  nutrition: {
-    calories: string;
-    protein: string;
-    carbs: string;
-    fat: string;
-  };
-}
+import { cn } from '@/lib/utils';
+import { type Recipe } from '@/ai/flows/chef-flow';
 
 interface RecipeDisplayProps {
   recipe: Recipe | null;
   isGenerating: boolean;
+  isChatMode?: boolean;
 }
 
 const InfoBadge = ({ icon: Icon, text }: { icon: React.ElementType, text: string }) => (
@@ -41,8 +28,8 @@ const NutrientItem = ({ value, label, icon: Icon, colorClass }: { value: string;
 );
 
 
-export default function RecipeDisplay({ recipe, isGenerating }: RecipeDisplayProps) {
-  if (isGenerating) {
+export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false }: RecipeDisplayProps) {
+  if (isGenerating && !isChatMode) {
     return (
       <Card className="shadow-sm rounded-2xl min-h-[400px] flex flex-col items-center justify-center text-center p-8 animate-fade-in">
         <Loader2 className="h-12 w-12 text-primary animate-spin mb-6" />
@@ -52,7 +39,7 @@ export default function RecipeDisplay({ recipe, isGenerating }: RecipeDisplayPro
     );
   }
 
-  if (!recipe) {
+  if (!recipe && !isChatMode) {
     return (
         <Card className="shadow-sm rounded-2xl min-h-[400px] flex flex-col items-center justify-center text-center p-8 border-dashed border-2">
             <Soup className="h-16 w-16 text-muted-foreground/50 mb-6" />
@@ -61,11 +48,13 @@ export default function RecipeDisplay({ recipe, isGenerating }: RecipeDisplayPro
         </Card>
     );
   }
+  
+  if (!recipe) return null;
 
   return (
-    <Card className="shadow-sm rounded-2xl animate-fade-in">
-      <CardHeader>
-        <CardTitle className="text-2xl md:text-3xl font-bold">{recipe.title}</CardTitle>
+    <div className={cn(!isChatMode && "shadow-sm rounded-2xl animate-fade-in card")}>
+      <CardHeader className={cn(isChatMode && 'p-4')}>
+        <CardTitle className="text-xl md:text-2xl font-bold">{recipe.title}</CardTitle>
         <CardDescription className="pt-1">{recipe.description}</CardDescription>
         <div className="flex flex-wrap items-center gap-3 pt-4">
             <InfoBadge icon={Clock} text={`${recipe.prepTime} preparo`} />
@@ -73,23 +62,23 @@ export default function RecipeDisplay({ recipe, isGenerating }: RecipeDisplayPro
             <InfoBadge icon={Users} text={`${recipe.servings} porções`} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className={cn("space-y-6", isChatMode && 'p-4 pt-2')}>
         <div>
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><CheckSquare className="h-5 w-5 text-primary" /> Ingredientes</h3>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><CheckSquare className="h-5 w-5 text-primary" /> Ingredientes</h3>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground pl-2">
                 {recipe.ingredients.map((item, index) => <li key={index}>{item}</li>)}
             </ul>
         </div>
         <Separator />
         <div>
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Utensils className="h-5 w-5 text-primary" /> Modo de Preparo</h3>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Utensils className="h-5 w-5 text-primary" /> Modo de Preparo</h3>
             <ol className="list-decimal list-inside space-y-3 pl-2">
                 {recipe.instructions.map((step, index) => <li key={index}>{step}</li>)}
             </ol>
         </div>
         <Separator />
          <div>
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Flame className="h-5 w-5 text-primary" /> Informação Nutricional</h3>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Flame className="h-5 w-5 text-primary" /> Informação Nutricional</h3>
             <p className="text-sm text-muted-foreground mb-4">Valores aproximados por porção.</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                  <NutrientItem value={recipe.nutrition.calories} label="Calorias" icon={Flame} colorClass="text-orange-500" />
@@ -99,6 +88,6 @@ export default function RecipeDisplay({ recipe, isGenerating }: RecipeDisplayPro
             </div>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 }

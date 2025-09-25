@@ -1,33 +1,26 @@
 // src/app/chef/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase/client';
 import AppLayout from '@/components/app-layout';
-import { Loader2, Sparkles, ChefHat } from 'lucide-react';
+import { Loader2, ChefHat } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
-import ChefForm from '@/components/chef-form';
-import RecipeDisplay from '@/components/recipe-display';
-import { chefVirtualFlow, type Recipe } from '@/ai/flows/chef-flow';
+import ChatView from '@/components/chat-view';
+import { type Message, initialMessages } from '@/components/chat-message';
+import { chefVirtualFlow } from '@/ai/flows/chef-flow';
 
-// Define meal percentages for goal optimization
-const mealPercentages: Record<string, { calories: number; protein: number }> = {
-  'cafe-da-manha': { calories: 0.25, protein: 0.25 },
-  'almoco': { calories: 0.35, protein: 0.35 },
-  'jantar': { calories: 0.30, protein: 0.30 },
-  'lanche': { calories: 0.10, protein: 0.10 },
-};
 
 export default function ChefPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
+  const [isResponding, setIsResponding] = useState(false);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -57,47 +50,43 @@ export default function ChefPage() {
     setUserProfile(prevProfile => prevProfile ? { ...prevProfile, ...updatedProfile } : null);
   }, []);
 
-  const handleGenerateRecipe = async (data: { ingredients: string; mealType: string; preferences: string; optimize: boolean }) => {
-    setIsGenerating(true);
-    setGeneratedRecipe(null);
-    
-    let flowInput: Parameters<typeof chefVirtualFlow>[0] = { ...data };
+  const handleSendMessage = async (input: string) => {
+      if (!input.trim()) return;
 
-    if (data.optimize && userProfile) {
-        const mealKey = data.mealType.toLowerCase();
-        const percentages = mealPercentages[mealKey];
+      const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input };
+      setMessages(prev => [...prev, userMessage]);
+      setIsResponding(true);
 
-        if (percentages) {
-            flowInput.targetCalories = Math.round(userProfile.calorieGoal * percentages.calories);
-            flowInput.targetProtein = Math.round(userProfile.proteinGoal * percentages.protein);
-        } else {
-             toast({
-                title: "Otimização não aplicável",
-                description: "Não foi possível aplicar a otimização para este tipo de refeição.",
-                variant: "destructive"
-            });
-        }
-    }
+      try {
+        // Here you would typically call your AI flow
+        const responseContent = await chefVirtualFlow(input);
+        
+        const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "Aqui está uma receita que encontrei para você:",
+            recipe: responseContent,
+        };
+        setMessages(prev => [...prev, aiMessage]);
 
-
-    try {
-      const recipe = await chefVirtualFlow(flowInput);
-      setGeneratedRecipe(recipe);
-      toast({
-          title: "Receita Gerada! 🍳",
-          description: "Sua nova receita está pronta para ser preparada."
-      });
-    } catch (error) {
-       console.error("Failed to generate recipe:", error);
-       toast({
-         title: "Erro ao gerar receita",
-         description: "Não foi possível conectar ao serviço. Por favor, tente novamente.",
-         variant: "destructive"
-       });
-    } finally {
-      setIsGenerating(false);
-    }
+      } catch (error) {
+          console.error("Failed to get AI response:", error);
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "Desculpe, não consegui processar sua solicitação. Por favor, tente novamente."
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          toast({
+              title: "Erro de Comunicação",
+              description: "Não foi possível conectar ao Chef. Verifique sua conexão ou tente mais tarde.",
+              variant: "destructive"
+          });
+      } finally {
+          setIsResponding(false);
+      }
   };
+
 
   if (loading || !user || !userProfile) {
     return (
@@ -115,23 +104,20 @@ export default function ChefPage() {
         onMealAdded={() => {}}
         onProfileUpdate={handleProfileUpdate}
     >
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 animate-fade-in text-center">
-            <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-3 mb-4">
+      <div className="flex flex-col h-full">
+         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+             <div className="inline-flex items-center justify-center bg-primary/10 text-primary rounded-full p-3 mb-4">
                 <ChefHat className="h-10 w-10" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Seu Chef Virtual com IA</h1>
-            <p className="text-muted-foreground max-w-2xl mt-3 mx-auto">Sem inspiração para cozinhar? Diga-nos o que você tem na geladeira e deixe a mágica acontecer.</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Converse com seu Chef IA</h1>
+            <p className="text-muted-foreground max-w-2xl mt-3 mx-auto">Peça receitas, dicas de culinária ou faça alterações nos pratos. Sua imaginação é o limite.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-4">
-                 <ChefForm onGenerate={handleGenerateRecipe} isGenerating={isGenerating} />
-            </div>
-             <div className="lg:col-span-8">
-                <RecipeDisplay recipe={generatedRecipe} isGenerating={isGenerating} />
-            </div>
-        </div>
+        <ChatView
+          messages={messages}
+          isResponding={isResponding}
+          onSendMessage={handleSendMessage}
+        />
       </div>
     </AppLayout>
   );
