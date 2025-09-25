@@ -33,8 +33,11 @@ const stravaSyncFlow = ai.defineFlow(
         throw new Error(`Failed to sync with Strava. Status: ${response.status}`);
       }
 
-      const activities: StravaActivity[] = await response.json();
-      console.log('Atividades recebidas do webhook:', activities);
+      const activitiesData = await response.json();
+      console.log('Dados recebidos do webhook:', activitiesData);
+
+      // Garante que a saída seja sempre um array
+      const activities = Array.isArray(activitiesData) ? activitiesData : [activitiesData];
       
       return activities;
 
