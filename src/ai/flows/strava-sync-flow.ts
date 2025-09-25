@@ -29,9 +29,18 @@ const stravaSyncFlow = ai.defineFlow(
   },
   async ({ userId }) => {
     // Inicialização do Firebase Admin SDK DENTRO do fluxo
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-      : undefined;
+    let serviceAccount;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        try {
+            serviceAccount = typeof process.env.FIREBASE_SERVICE_ACCOUNT_KEY === 'string'
+                ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+                : process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        } catch (e) {
+            console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY', e);
+            serviceAccount = undefined;
+        }
+    }
+
 
     if (!getApps().length) {
       initializeApp({
