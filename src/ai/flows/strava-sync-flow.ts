@@ -10,19 +10,18 @@ import { z } from 'zod';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import type { StravaActivity } from '@/types/strava';
+import serviceAccount from '@/lib/firebase/service-account.json';
 
 const StravaSyncInputSchema = z.object({
   userId: z.string().describe('The ID of the user to associate the activities with.'),
 });
 type StravaSyncInput = z.infer<typeof StravaSyncInputSchema>;
 
-// The flow returns a count of synced activities.
 const StravaSyncOutputSchema = z.object({
   syncedCount: z.number(),
 });
-type StravaSyncOutput = z.infer<typeof StravaSyncOutputSchema>;
 
-export async function stravaSync(input: StravaSyncInput): Promise<StravaSyncOutput> {
+export async function stravaSync(input: StravaSyncInput): Promise<z.infer<typeof StravaSyncOutputSchema>> {
   return await stravaSyncFlow(input);
 }
 
@@ -33,19 +32,9 @@ const stravaSyncFlow = ai.defineFlow(
     outputSchema: StravaSyncOutputSchema,
   },
   async ({ userId }) => {
-    let serviceAccount;
-    try {
-        if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        }
-    } catch (e) {
-        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
-        throw new Error('Firebase service account key is not valid JSON.');
-    }
-
     if (!getApps().length) {
       initializeApp({
-        credential: serviceAccount ? cert(serviceAccount) : undefined,
+        credential: cert(serviceAccount),
       });
     }
 
@@ -63,11 +52,7 @@ const stravaSyncFlow = ai.defineFlow(
 
       let data = await response.json();
       
-      let activities: StravaActivity[] = Array.isArray(data) && Array.isArray(data[0]) 
-          ? data[0] 
-          : Array.isArray(data)
-          ? data
-          : [data];
+      let activities: StravaActivity[] = Array.isArray(data) ? data : [data];
 
       if (!activities || activities.length === 0) {
         return { syncedCount: 0 };
@@ -77,8 +62,10 @@ const stravaSyncFlow = ai.defineFlow(
       const userActivitiesRef = db.collection('users').doc(userId).collection('strava_activities');
       
       activities.forEach(activity => {
-        const docRef = userActivitiesRef.doc(String(activity.id));
-        batch.set(docRef, activity);
+        if (activity && activity.id) {
+            const docRef = userActivitiesRef.doc(String(activity.id));
+            batch.set(docRef, activity);
+        }
       });
 
       await batch.commit();
