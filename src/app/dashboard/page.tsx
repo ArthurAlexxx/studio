@@ -127,14 +127,14 @@ export default function DashboardPage() {
             if(!areMealsLoaded) setAreMealsLoaded(true);
         });
         
+        const sevenDaysAgoStr = getLocalDateString(subDays(new Date(), 6));
         const weeklyMealsQuery = query(
             collection(db, "meal_entries"),
-            where("userId", "==", currentUser.uid)
+            where("userId", "==", currentUser.uid),
+            where("date", ">=", sevenDaysAgoStr)
         );
 
         const unsubscribeWeeklyMeals = onSnapshot(weeklyMealsQuery, (snapshot) => {
-            const sevenDaysAgoStr = getLocalDateString(subDays(new Date(), 6));
-            
             const weekDates = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() });
             const caloriesByDay: Record<string, number> = {};
             weekDates.forEach(d => {
@@ -143,10 +143,8 @@ export default function DashboardPage() {
 
             snapshot.docs.forEach(doc => {
                 const meal = doc.data();
-                 if (meal.date >= sevenDaysAgoStr && meal.date <= todayStr) {
-                    if (meal.date in caloriesByDay) {
-                        caloriesByDay[meal.date] += meal.mealData.totais.calorias || 0;
-                    }
+                if (meal.date in caloriesByDay) {
+                    caloriesByDay[meal.date] += meal.mealData.totais.calorias || 0;
                 }
             });
             setWeeklyCalories(caloriesByDay);
@@ -190,7 +188,6 @@ export default function DashboardPage() {
             console.error("Error fetching today's hydration:", error);
         });
         
-        const sevenDaysAgoStr = getLocalDateString(subDays(new Date(), 6));
         const weeklyHydrationQuery = query(
           collection(db, 'hydration_entries'),
           where('userId', '==', currentUser.uid),
@@ -199,7 +196,6 @@ export default function DashboardPage() {
 
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {
           const weeklyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HydrationEntry));
-          weeklyData.sort((a, b) => a.date.localeCompare(b.date));
           setHydrationHistory(weeklyData);
           if (!isHydrationLoaded) setIsHydrationLoaded(true);
         }, (error) => {
@@ -271,14 +267,14 @@ export default function DashboardPage() {
     }), [daysOfWeek, weeklyCalories]);
     
     const weeklyHydrationData = useMemo(() => {
-      const sortedHistory = [...hydrationHistory].sort((a, b) => b.date.localeCompare(a.date));
       return daysOfWeek.map(day => {
-          const entry = sortedHistory.find(h => isSameDay(parseISO(h.date), day));
+          const dateStr = getLocalDateString(day);
+          const entry = hydrationHistory.find(h => h.date === dateStr);
           return {
               day: format(day, 'E', { locale: ptBR }).charAt(0).toUpperCase() + format(day, 'E', { locale: ptBR }).slice(1,3),
               intake: entry ? entry.intake : 0,
           };
-      }).reverse();
+      });
     }, [daysOfWeek, hydrationHistory]);
   
   const initialLoading = loading || !user || !userProfile;
