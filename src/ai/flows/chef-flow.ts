@@ -4,15 +4,13 @@
  * @fileOverview A flow to generate recipes by calling an external n8n webhook.
  *
  * - chefVirtualFlow - The main flow function.
- * - ChefVirtualFlowInputSchema - The Zod schema for the flow's input.
- * - RecipeSchema - The Zod schema for the recipe structure returned by the webhook.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 // Schema for the recipe object
-export const RecipeSchema = z.object({
+const RecipeSchema = z.object({
   title: z.string(),
   description: z.string(),
   prepTime: z.string(),
@@ -29,7 +27,7 @@ export const RecipeSchema = z.object({
 });
 
 // Input schema for the flow
-export const ChefVirtualFlowInputSchema = z.object({
+const ChefVirtualFlowInputSchema = z.object({
   ingredients: z.string(),
   mealType: z.string(),
   preferences: z.string().optional(),
@@ -37,7 +35,7 @@ export const ChefVirtualFlowInputSchema = z.object({
 });
 
 type ChefVirtualFlowInput = z.infer<typeof ChefVirtualFlowInputSchema>;
-type Recipe = z.infer<typeof RecipeSchema>;
+export type Recipe = z.infer<typeof RecipeSchema>;
 
 // Exported function to be called from the client
 export async function chefVirtualFlow(input: ChefVirtualFlowInput): Promise<Recipe> {
