@@ -163,8 +163,7 @@ export default function DashboardPage() {
         const weeklyHydrationQuery = query(
           collection(db, 'hydration_entries'),
           where('userId', '==', currentUser.uid),
-          where('date', '>=', sevenDaysAgo),
-          orderBy('date', 'asc')
+          where('date', '>=', sevenDaysAgo)
         );
 
         const unsubscribeWeeklyHydration = onSnapshot(weeklyHydrationQuery, (snapshot) => {

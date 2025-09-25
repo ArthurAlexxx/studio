@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, Cell, LineChart, Line } from 'recharts';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 const caloriesChartConfig = {
@@ -46,22 +46,51 @@ export function DashboardCharts({ chartType, data }: DashboardChartsProps) {
     return (
        <ChartContainer
         config={caloriesChartConfig}
-        className="mx-auto aspect-square max-h-[250px]"
+        className="min-h-[250px] w-full"
       >
-        <RadarChart data={data}>
+        <LineChart
+          data={data}
+          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+        >
+          <CartesianGrid vertical={false} strokeDasharray="3 3" />
+          <XAxis
+            dataKey="day"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+             className='text-xs'
+          />
+           <YAxis 
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            className='text-xs'
+           />
           <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent indicator="dot" />}
+            cursor={true}
+            content={
+              <ChartTooltipContent
+                indicator="dot"
+              />
+            }
           />
-          <PolarAngleAxis dataKey="day" className='text-xs'/>
-          <PolarGrid gridType="circle" />
-          <Radar
+          <Line
             dataKey="calories"
-            fill="var(--color-calories)"
-            fillOpacity={0.6}
+            type="monotone"
             stroke="var(--color-calories)"
+            strokeWidth={2}
+            dot={{
+              r: 4,
+              fill: 'var(--color-calories)',
+              strokeWidth: 2,
+              stroke: 'hsl(var(--background))',
+            }}
+            activeDot={{
+                r: 6,
+                strokeWidth: 2,
+            }}
           />
-        </RadarChart>
+        </LineChart>
       </ChartContainer>
     );
   }
