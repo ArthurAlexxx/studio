@@ -32,11 +32,9 @@ const stravaSyncFlow = ai.defineFlow(
     let serviceAccount;
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
         try {
-            serviceAccount = typeof process.env.FIREBASE_SERVICE_ACCOUNT_KEY === 'string'
-                ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-                : process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
         } catch (e) {
-            console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY', e);
+            console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is a valid JSON string.', e);
             serviceAccount = undefined;
         }
     }
