@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, History, Leaf, Settings, LogOut, Menu, Plus, User as UserIcon, ChevronDown, X, HeartPulse } from 'lucide-react';
+import { BarChart3, History, Leaf, Settings, LogOut, Menu, Plus, User as UserIcon, ChevronDown, X, HeartPulse, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,7 @@ const navItems = [
   { href: '/dashboard', label: 'Visão Geral', icon: BarChart3 },
   { href: '/history', label: 'Histórico', icon: History },
   { href: '/strava', label: 'Atividades', icon: HeartPulse },
+  { href: '/chef', label: 'Chef Virtual', icon: ChefHat },
 ];
 
 const NavLink = ({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) => {
@@ -96,7 +97,7 @@ export default function AppLayout({ user, userProfile, onMealAdded, onProfileUpd
                                 <div
                                     className={cn(
                                     "flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
-                                    pathname === item.href && "bg-muted text-foreground"
+                                    pathname.startsWith(item.href) && "bg-muted text-foreground"
                                     )}
                                 >
                                     <item.icon className="h-5 w-5" />

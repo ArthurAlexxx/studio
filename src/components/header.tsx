@@ -1,7 +1,7 @@
 // src/components/header.tsx
 'use client';
 
-import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown, BarChart3, History } from 'lucide-react';
+import { Leaf, Menu, LogOut, User as UserIcon, ChevronDown, BarChart3, History, ChefHat } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -97,6 +97,10 @@ export default function Header() {
                      <DropdownMenuItem onClick={() => router.push('/history')}>
                       <History className="mr-2 h-4 w-4" />
                       <span>Meu Histórico</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/chef')}>
+                      <ChefHat className="mr-2 h-4 w-4" />
+                      <span>Chef Virtual</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500 focus:bg-red-50">
