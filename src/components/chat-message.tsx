@@ -29,13 +29,14 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       </Avatar>
       <div className={cn(
         'max-w-xl lg:max-w-3xl rounded-2xl',
-        isAssistant && !message.recipe ? 'bg-secondary p-4 rounded-tl-none' : '',
+        isAssistant ? 'bg-secondary rounded-tl-none' : '',
         !isAssistant ? 'bg-primary text-primary-foreground p-4 rounded-tr-none' : ''
       )}>
-        {message.recipe ? (
+        {message.content && (
+            <p className="p-4 text-base whitespace-pre-wrap">{message.content}</p>
+        )}
+        {message.recipe && (
           <RecipeDisplay recipe={message.recipe} isGenerating={false} isChatMode={true} />
-        ) : (
-          <p className="text-base whitespace-pre-wrap">{message.content}</p>
         )}
       </div>
     </div>

@@ -64,8 +64,8 @@ export default function ChefPage() {
         const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: typeof response === 'string' ? response : '',
-            recipe: typeof response === 'object' ? response : undefined
+            content: response.text || '',
+            recipe: response.recipe,
         };
         
         setMessages(prev => [...prev, aiMessage]);

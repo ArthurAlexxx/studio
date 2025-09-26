@@ -37,11 +37,12 @@ const FlowInputSchema = z.object({
 
 type FlowInput = z.infer<typeof FlowInputSchema>;
 
-// The output can be either a recipe object or a string message
-const ChefFlowOutputSchema = z.union([
-    RecipeSchema,
-    z.string()
-]);
+// The output can be either a recipe object, a string message, or a combination
+const ChefFlowOutputSchema = z.object({
+    text: z.string().optional(),
+    recipe: RecipeSchema.optional(),
+});
+
 
 export type ChefFlowOutput = z.infer<typeof ChefFlowOutputSchema>;
 
@@ -79,35 +80,61 @@ const flow = ai.defineFlow(
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
-      const responseData = await response.json();
+      const responseText = await response.text();
 
-      // Check if the response is an array and has content
-      if (Array.isArray(responseData) && responseData.length > 0) {
-        const firstItem = responseData[0];
-
-        // Check for the explicit error format
-        if (firstItem.erro && typeof firstItem.erro === 'string') {
-          return firstItem.erro;
-        }
-
-        // Check for a simple text output for chat continuation
-        if (firstItem.output && typeof firstItem.output === 'string') {
-            return firstItem.output;
-        }
-        
-        // Check for the recipe format
-        const parsedRecipe = RecipeSchema.safeParse(firstItem);
-        if (parsedRecipe.success) {
-          return parsedRecipe.data;
-        }
-      }
+      // Find the start of the JSON object
+      const jsonStart = responseText.indexOf('{');
+      const textPart = jsonStart > 0 ? responseText.substring(0, jsonStart).trim() : '';
+      const jsonPart = jsonStart !== -1 ? responseText.substring(jsonStart) : '';
       
-      // Fallback for unexpected formats
-      return "Desculpe, a resposta do serviço não pôde ser processada. Por favor, tente novamente.";
+      if (jsonPart) {
+         try {
+            const parsedJson = JSON.parse(jsonPart);
+            
+            // Handle array format, e.g. from n8n
+            const data = Array.isArray(parsedJson) ? parsedJson[0] : parsedJson;
+
+            // Check for recipe
+            const parsedRecipe = RecipeSchema.safeParse(data);
+            if (parsedRecipe.success) {
+                return {
+                    text: textPart,
+                    recipe: parsedRecipe.data,
+                };
+            }
+         } catch (e) {
+             // JSON parsing failed, but we might have text content
+             if (textPart) {
+                return { text: textPart };
+             }
+             console.error("Failed to parse JSON part of the response", e);
+             return { text: "Desculpe, a resposta do serviço está em um formato inválido." };
+         }
+      }
+
+      // If no JSON part, or parsing failed, return the text part
+      // This also handles `erro` and `output` cases if they are not inside a larger JSON
+      if (responseText) {
+          try {
+              const data = JSON.parse(responseText);
+              const responseData = Array.isArray(data) ? data[0] : data;
+              if (responseData.erro && typeof responseData.erro === 'string') {
+                return { text: responseData.erro };
+              }
+              if (responseData.output && typeof responseData.output === 'string') {
+                return { text: responseData.output };
+              }
+          } catch(e) {
+             // It's just plain text.
+             return { text: responseText };
+          }
+      }
+
+      return { text: "Desculpe, a resposta do serviço não pôde ser processada." };
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
-      return `Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.`;
+      return { text: `Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.` };
     }
   }
 );
