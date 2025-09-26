@@ -5,12 +5,15 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ChefHat, User } from 'lucide-react';
 import type { Recipe } from '@/ai/flows/chef-flow';
 import RecipeDisplay from './recipe-display';
+import type { Timestamp } from 'firebase/firestore';
+
 
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  recipe?: Recipe;
+  recipe?: Recipe | null;
+  createdAt?: Timestamp | { seconds: number; nanoseconds: number; }; // Allow both server and client side timestamp
 }
 
 interface ChatMessageProps {
@@ -50,3 +53,4 @@ export const initialMessages: Message[] = [
     content: "Olá! Sou seu Chef Virtual. O que você gostaria de preparar hoje? Diga-me quais ingredientes você tem ou que tipo de prato está com vontade de comer.",
   },
 ];
+
