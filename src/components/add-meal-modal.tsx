@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { MealData } from '@/types/meal';
 import { db } from '@/lib/firebase/client';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { analyzeFood } from '@/ai/flows/meal-analyze-flow';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -63,35 +64,20 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
     }
     
     try {
-      const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
-      const requests = data.foods.map(food => {
-        const payload = {
-          action: 'ref',
-          alimento: food.name,
-          porcao: food.portion,
-          unidade: food.unit,
-        };
-        return fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }).then(response => {
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            // Check if the response has content before trying to parse it as JSON
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.indexOf('application/json') !== -1) {
-                return response.json();
-            }
-            return null; // Return null if no JSON content
-        });
-      });
+      const requests = data.foods.map(food => 
+        analyzeFood({
+            alimento: food.name,
+            porcao: food.portion,
+            unidade: food.unit,
+        })
+      );
       
-      const results = (await Promise.all(requests)).flat().filter((r): r is MealData => r !== null);
+      const results = (await Promise.all(requests)).filter((r): r is MealData => r !== null);
 
       if (results.length === 0) {
         toast({
           title: 'Nenhum dado nutricional retornado',
-          description: 'O serviço não retornou informações para os alimentos informados.',
+          description: 'O serviço não retornou informações para os alimentos informados. Verifique se os nomes estão corretos.',
           variant: 'destructive',
         });
         return;
@@ -126,7 +112,7 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
        console.error("Failed to submit meal", error);
         toast({
             title: "Erro ao adicionar refeição",
-            description: error.message || "Não foi possível conectar ao servidor para adicionar sua refeição. Tente novamente.",
+            description: error.message || "Não foi possível processar sua refeição. Tente novamente.",
             variant: "destructive"
         });
     }
