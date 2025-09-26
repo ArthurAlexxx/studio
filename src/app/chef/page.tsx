@@ -34,45 +34,56 @@ const RecipeSchema = z.object({
 });
 
 // Helper to parse the raw text from the flow
-const parseResponse = (responseText: string): { text: string, recipe?: Recipe } => {
-    // Check for a mixed response (text + JSON)
-    const jsonStartIndex = responseText.indexOf('{');
-    if (jsonStartIndex > 0) {
-        const textPart = responseText.substring(0, jsonStartIndex).trim();
-        const jsonPart = responseText.substring(jsonStartIndex);
-        
-        try {
-            const parsedJson = JSON.parse(jsonPart);
-            const parsedRecipe = RecipeSchema.safeParse(parsedJson);
-            if (parsedRecipe.success) {
-                return { text: textPart, recipe: parsedRecipe.data };
-            }
-        } catch (e) {
-            // If JSON parsing fails, just return the text part
-            return { text: textPart };
-        }
+const parseResponse = (responseText: string): { text: string; recipe?: Recipe } => {
+  try {
+    const data = JSON.parse(responseText);
+    
+    // Case 1: Response is an array like [{"output": "text and json..."}]
+    if (Array.isArray(data) && data.length > 0 && data[0].output) {
+      responseText = data[0].output; // Continue parsing with the inner content
     }
+  } catch (e) {
+    // It's likely a plain text response, so we let it pass to the next section
+  }
 
-    // Try parsing as a pure JSON response (array or object)
+  // Case 2: Response (or inner content) is a mix of text and a JSON object string
+  const jsonStartIndex = responseText.indexOf('{');
+  if (jsonStartIndex > 0) {
+    const textPart = responseText.substring(0, jsonStartIndex).trim();
+    const jsonPart = responseText.substring(jsonStartIndex);
+
     try {
-        const data = JSON.parse(responseText);
-        const item = Array.isArray(data) ? data[0] : data;
-
-        // It's a recipe
-        const parsedRecipe = RecipeSchema.safeParse(item);
-        if (parsedRecipe.success) {
-            return { text: '', recipe: parsedRecipe.data };
-        }
-
-        // It's an error or conversational output
-        if (item.erro) return { text: item.erro };
-        if (item.output) return { text: item.output };
+      const parsedJson = JSON.parse(jsonPart);
+      const parsedRecipe = RecipeSchema.safeParse(parsedJson);
+      if (parsedRecipe.success) {
+        return { text: textPart, recipe: parsedRecipe.data };
+      }
     } catch (e) {
-        // Not a valid JSON, so treat as plain text.
+      // JSON part is invalid, return only the text part
+      return { text: textPart };
+    }
+  }
+  
+  // Case 3: Response is a pure JSON object string (recipe, error, or simple output)
+   try {
+    const data = JSON.parse(responseText);
+    const item = Array.isArray(data) ? data[0] : data;
+
+    // It's a recipe
+    const parsedRecipe = RecipeSchema.safeParse(item);
+    if (parsedRecipe.success) {
+      return { text: '', recipe: parsedRecipe.data };
     }
 
-    // Fallback for pure text or any other case
-    return { text: responseText };
+    // It's an error or conversational output
+    if (item.erro) return { text: item.erro };
+    if (item.output) return { text: item.output };
+  } catch (e) {
+    // Not a valid JSON, so treat as plain text.
+  }
+
+  // Case 4: Fallback for pure text or any other unhandled case
+  return { text: responseText };
 };
 
 
