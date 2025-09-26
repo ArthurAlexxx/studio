@@ -38,24 +38,24 @@ type FlowInput = z.infer<typeof FlowInputSchema>;
 // Helper function to format the recipe object into a readable string
 function formatRecipeToString(recipe: Recipe): string {
     const ingredients = recipe.ingredients.map(item => `- ${item}`).join('\n');
-    const instructions = recipe.instructions.map((step, index) => `${index + 1}. ${step}`).join('\n');
+    const instructions = recipe.instructions.map((step) => `${step}`).join('\n');
 
     return `
-*${recipe.title}*
+🍽️ ${recipe.title}
 
 ${recipe.description}
 
-*Tempo de Preparo:* ${recipe.prepTime}
-*Tempo de Cozimento:* ${recipe.cookTime}
-*Rendimento:* ${recipe.servings}
+⏱️ Tempo de preparo: ${recipe.prepTime}
+🔥 Tempo de cozimento: ${recipe.cookTime}
+👥 Porções: ${recipe.servings}
 
-*Ingredientes:*
+📝 Ingredientes:
 ${ingredients}
 
-*Modo de Preparo:*
+👨‍🍳 Modo de Preparo:
 ${instructions}
 
-*Informação Nutricional (por porção):*
+🔎 Informação Nutricional:
 - Calorias: ${recipe.nutrition.calories}
 - Proteínas: ${recipe.nutrition.protein}
 - Carboidratos: ${recipe.nutrition.carbs}
@@ -87,7 +87,6 @@ const flow = ai.defineFlow(
       }
     };
 
-    let responseText = '';
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -99,38 +98,38 @@ const flow = ai.defineFlow(
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
-      responseText = await response.text();
+      const responseText = await response.text();
       if (!responseText) {
           return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
       }
       
-      const responseData = JSON.parse(responseText);
+      try {
+        const responseData = JSON.parse(responseText);
 
-      // Handle array format: [{...recipe}] or [{ "output": "Hello" }]
-      if (Array.isArray(responseData) && responseData.length > 0) {
-        const firstItem = responseData[0];
-        
-        // Try to parse as a recipe first
-        const parsedRecipe = RecipeSchema.safeParse(firstItem);
-        if (parsedRecipe.success) {
-            return formatRecipeToString(parsedRecipe.data);
-        }
+        // Handle array format: [{...recipe}] or [{ "output": "Hello" }]
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          const firstItem = responseData[0];
+          
+          // Try to parse as a recipe first
+          const parsedRecipe = RecipeSchema.safeParse(firstItem);
+          if (parsedRecipe.success) {
+              return formatRecipeToString(parsedRecipe.data);
+          }
 
-        // Fallback to check for a simple chat message
-        if (typeof firstItem.output === 'string') {
-            return firstItem.output;
+          // Fallback to check for a simple chat message
+          if (typeof firstItem.output === 'string') {
+              return firstItem.output;
+          }
         }
+      } catch (e) {
+        // If JSON.parse fails, it means the response is a plain string.
+        return responseText;
       }
       
       throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
-       // If parsing failed or format is wrong, return the raw text if available.
-      if (responseText) {
-        return responseText;
-      }
-      // Fallback error message if everything else fails
       return `Desculpe, ocorreu um erro ao processar a resposta: ${error.message}`;
     }
   }
