@@ -26,7 +26,7 @@ const RecipeSchema = z.object({
   }),
 });
 
-type Recipe = z.infer<typeof RecipeSchema>;
+export type Recipe = z.infer<typeof RecipeSchema>;
 
 const FlowInputSchema = z.object({
   prompt: z.string(),
@@ -36,7 +36,7 @@ const FlowInputSchema = z.object({
 type FlowInput = z.infer<typeof FlowInputSchema>;
 
 // Exported function to be called from the client
-export async function chefVirtualFlow(input: FlowInput): Promise<Recipe> {
+export async function chefVirtualFlow(input: FlowInput): Promise<Recipe | string> {
   return await flow(input);
 }
 
@@ -45,7 +45,7 @@ const flow = ai.defineFlow(
   {
     name: 'chefVirtualFlow',
     inputSchema: FlowInputSchema,
-    outputSchema: RecipeSchema,
+    outputSchema: z.union([RecipeSchema, z.string()]),
   },
   async ({ prompt, userId }) => {
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
@@ -72,27 +72,31 @@ const flow = ai.defineFlow(
       }
       
       const responseData = await response.json();
-      let recipeData;
       
-      // Handle both array and object responses
-      if (Array.isArray(responseData) && responseData.length > 0) {
-          recipeData = responseData[0];
-      } else if (typeof responseData === 'object' && responseData !== null && !Array.isArray(responseData)) {
-          recipeData = responseData;
-      } else {
-          throw new Error("Webhook response is not in the expected object or array format.");
+      // Handle array vs. object responses
+      let potentialRecipe = Array.isArray(responseData) && responseData.length > 0
+        ? responseData[0]
+        : responseData;
+
+      // Handle text output from chat
+      if (typeof potentialRecipe.output === 'string') {
+        // If there's an `output` field with a string, it's likely a chat message
+        return potentialRecipe.output;
       }
       
-      const recipe = RecipeSchema.parse(recipeData);
-      return recipe;
+      const parsedRecipe = RecipeSchema.safeParse(potentialRecipe);
+      if (parsedRecipe.success) {
+        return parsedRecipe.data;
+      }
+      
+      throw new Error("The webhook response was not in a recognized format (Recipe or chat output).");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
       if (error instanceof z.ZodError) {
           console.error("Zod validation errors:", error.errors);
-          throw new Error("The webhook response was not in the expected format.");
       }
-      throw new Error(`Failed to process recipe from webhook: ${error.message}`);
+      throw new Error(`Failed to process response from webhook: ${error.message}`);
     }
   }
 );

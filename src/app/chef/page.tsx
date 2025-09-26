@@ -1,7 +1,8 @@
+
 // src/app/chef/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -12,7 +13,7 @@ import { Loader2, ChefHat } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import ChatView from '@/components/chat-view';
 import { type Message, initialMessages } from '@/components/chat-message';
-import { chefVirtualFlow } from '@/ai/flows/chef-flow';
+import { chefVirtualFlow, type Recipe } from '@/ai/flows/chef-flow';
 
 
 export default function ChefPage() {
@@ -60,12 +61,25 @@ export default function ChefPage() {
       try {
         const responseContent = await chefVirtualFlow({ prompt: input, userId: user.uid });
         
-        const aiMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: "Aqui está uma receita que encontrei para você:",
-            recipe: responseContent,
-        };
+        let aiMessage: Message;
+
+        if (typeof responseContent === 'string') {
+           aiMessage = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: responseContent,
+          };
+        } else if (typeof responseContent === 'object' && responseContent !== null) {
+           aiMessage = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: "Aqui está uma receita que encontrei para você:",
+              recipe: responseContent as Recipe,
+          };
+        } else {
+          throw new Error("Formato de resposta desconhecido.");
+        }
+        
         setMessages(prev => [...prev, aiMessage]);
 
       } catch (error) {
