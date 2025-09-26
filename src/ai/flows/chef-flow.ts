@@ -106,22 +106,20 @@ const flow = ai.defineFlow(
       }
       const responseData = JSON.parse(responseText);
 
-      // New logic to handle the nested structure: [{ "combinedRecipe": [{...recipe}] }]
-      if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].combinedRecipe && Array.isArray(responseData[0].combinedRecipe) && responseData[0].combinedRecipe.length > 0) {
-        const recipeObject = responseData[0].combinedRecipe[0];
-        const parsedRecipe = RecipeSchema.safeParse(recipeObject);
+      // Handle array format: [{...recipe}] or [{ "output": "Hello" }]
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        const firstItem = responseData[0];
+        
+        // Try to parse as a recipe first
+        const parsedRecipe = RecipeSchema.safeParse(firstItem);
         if (parsedRecipe.success) {
             return formatRecipeToString(parsedRecipe.data);
-        } else {
-            console.error("Zod validation errors for combinedRecipe:", parsedRecipe.error.errors);
-            throw new Error("A receita combinada recebida do webhook não está no formato esperado.");
         }
-      }
-      
-      // Fallback for simple chat message like { output: "Hello" } or [{ output: "Hello" }]
-      let potentialMessageData = Array.isArray(responseData) ? responseData[0] : responseData;
-      if (potentialMessageData && typeof potentialMessageData.output === 'string') {
-        return potentialMessageData.output;
+
+        // Fallback to check for a simple chat message
+        if (typeof firstItem.output === 'string') {
+            return firstItem.output;
+        }
       }
       
       console.error("Unexpected webhook response format:", responseData);
