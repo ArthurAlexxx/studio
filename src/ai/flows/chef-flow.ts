@@ -104,7 +104,15 @@ const flow = ai.defineFlow(
       if (!responseText) {
           return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
       }
-      const responseData = JSON.parse(responseText);
+      
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        // If parsing fails, it's likely a plain text response
+        return responseText;
+      }
+
 
       // Handle array format: [{...recipe}] or [{ "output": "Hello" }]
       if (Array.isArray(responseData) && responseData.length > 0) {
