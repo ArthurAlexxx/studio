@@ -107,7 +107,7 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
       
       await addDoc(collection(db, 'meal_entries'), {
         userId: userId,
-        date: new Date().toISOString().split('T')[0],
+        date: new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date()),
         mealType: data.mealType,
         mealData: combinedMealData,
         createdAt: serverTimestamp(),
