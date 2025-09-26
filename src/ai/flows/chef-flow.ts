@@ -58,7 +58,7 @@ const flow = ai.defineFlow(
     outputSchema: ChefFlowOutputSchema,
   },
   async ({ prompt, userId }) => {
-    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
+    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook/d6381d21-a089-498f-8248-6d7802c0a1a5';
     
     const payload = {
       sessionId: userId,
