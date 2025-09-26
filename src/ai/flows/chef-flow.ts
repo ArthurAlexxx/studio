@@ -84,7 +84,31 @@ const flow = ai.defineFlow(
 
       // Case 1: Response contains both text and a JSON object for the recipe
       const jsonStartIndex = responseText.indexOf('{');
-      if (jsonStartIndex > 0) {
+      if (responseText.startsWith('[') || jsonStartIndex === -1) {
+          // This is likely a pure JSON response (array or object) or pure text
+          try {
+              const data = JSON.parse(responseText);
+
+              if (Array.isArray(data) && data.length > 0) {
+                  const firstItem = data[0];
+                  
+                  const parsedRecipe = RecipeSchema.safeParse(firstItem);
+                  if (parsedRecipe.success) {
+                      return { recipe: parsedRecipe.data };
+                  }
+                  if (firstItem.erro) {
+                      return { text: firstItem.erro };
+                  }
+                  if (firstItem.output) {
+                      return { text: firstItem.output };
+                  }
+              }
+          } catch (e) {
+             // Not a valid JSON, so treat as plain text.
+             return { text: responseText };
+          }
+      } else if (jsonStartIndex > 0) {
+        // This is a mixed response with text and a JSON object
         const textPart = responseText.substring(0, jsonStartIndex).trim();
         const jsonPart = responseText.substring(jsonStartIndex);
         
@@ -101,39 +125,11 @@ const flow = ai.defineFlow(
         }
       }
 
-      // Case 2: Response is purely JSON (as an array)
-      try {
-        const data = JSON.parse(responseText);
-
-        if (Array.isArray(data) && data.length > 0) {
-          const firstItem = data[0];
-
-          // Check for a valid recipe
-          const parsedRecipe = RecipeSchema.safeParse(firstItem);
-          if (parsedRecipe.success) {
-            return { recipe: parsedRecipe.data };
-          }
-
-          // Check for an error message
-          if (firstItem.erro && typeof firstItem.erro === 'string') {
-            return { text: firstItem.erro };
-          }
-
-          // Check for a chat output message
-          if (firstItem.output && typeof firstItem.output === 'string') {
-            return { text: firstItem.output };
-          }
-        }
-      } catch (e) {
-        // Not a valid JSON, so it might be plain text. Fall through.
-      }
-
-      // Case 3: Response is just plain text
+      // Fallback for any other case: return the plain text
       if (responseText) {
           return { text: responseText };
       }
 
-      // Fallback for empty or unprocessable responses
       return { text: "Desculpe, a resposta do serviço não pôde ser processada." };
 
     } catch (error: any) {
@@ -142,4 +138,3 @@ const flow = ai.defineFlow(
     }
   }
 );
-
