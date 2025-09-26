@@ -71,7 +71,13 @@ const flow = ai.defineFlow(
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
-      const responseData = await response.json();
+      const responseText = await response.text();
+      if (!responseText) {
+          // Handle empty response body
+          return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
+      }
+
+      const responseData = JSON.parse(responseText);
       
       // Handle array vs. object responses
       let potentialRecipe = Array.isArray(responseData) && responseData.length > 0
