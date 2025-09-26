@@ -10,13 +10,23 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import * as admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
-import serviceAccount from '@/lib/firebase/service-account.json';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!getApps().length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+  const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!serviceAccountString) {
+    throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_JSON não está definida.');
+  }
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountString);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  } catch (error) {
+    console.error('Erro ao analisar as credenciais do Firebase. Verifique o formato da variável de ambiente.', error);
+    throw new Error('Falha ao inicializar o Firebase Admin SDK.');
+  }
 }
 
 const db = admin.firestore();
