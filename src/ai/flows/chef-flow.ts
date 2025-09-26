@@ -37,14 +37,33 @@ const FlowInputSchema = z.object({
 
 type FlowInput = z.infer<typeof FlowInputSchema>;
 
-// The output can be either a recipe object, a string message, or a combination
+// The output will now always be a text string
 const ChefFlowOutputSchema = z.object({
     text: z.string().optional(),
-    recipe: RecipeSchema.optional(),
 });
 
 
 export type ChefFlowOutput = z.infer<typeof ChefFlowOutputSchema>;
+
+// Helper function to format the recipe object into a string
+function formatRecipeToString(recipe: Recipe): string {
+    const ingredients = recipe.ingredients.map(item => `- ${item}`).join('\n');
+    const instructions = recipe.instructions.map(item => `${item}`).join('\n');
+
+    return `🍽️ ${recipe.title}\n\n` +
+           `${recipe.description}\n\n` +
+           `⏱️ Tempo de preparo: ${recipe.prepTime}\n` +
+           `🔥 Tempo de cozimento: ${recipe.cookTime}\n` +
+           `👥 Porções: ${recipe.servings}\n\n` +
+           `📝 Ingredientes:\n${ingredients}\n\n` +
+           `👨‍🍳 Modo de Preparo:\n${instructions}\n\n` +
+           `🔎 Informação Nutricional:\n` +
+           `- Calorias: ${recipe.nutrition.calories}\n` +
+           `- Proteínas: ${recipe.nutrition.protein}\n` +
+           `- Carboidratos: ${recipe.nutrition.carbs}\n` +
+           `- Gorduras: ${recipe.nutrition.fat}`;
+}
+
 
 // Exported function to be called from the client
 export async function chefVirtualFlow(input: FlowInput): Promise<ChefFlowOutput> {
@@ -82,33 +101,9 @@ const flow = ai.defineFlow(
       
       const responseText = await response.text();
 
-      // Case 1: Response contains both text and a JSON object for the recipe
+      // First, check for a mixed response (text + JSON)
       const jsonStartIndex = responseText.indexOf('{');
-      if (responseText.startsWith('[') || jsonStartIndex === -1) {
-          // This is likely a pure JSON response (array or object) or pure text
-          try {
-              const data = JSON.parse(responseText);
-
-              if (Array.isArray(data) && data.length > 0) {
-                  const firstItem = data[0];
-                  
-                  const parsedRecipe = RecipeSchema.safeParse(firstItem);
-                  if (parsedRecipe.success) {
-                      return { recipe: parsedRecipe.data };
-                  }
-                  if (firstItem.erro) {
-                      return { text: firstItem.erro };
-                  }
-                  if (firstItem.output) {
-                      return { text: firstItem.output };
-                  }
-              }
-          } catch (e) {
-             // Not a valid JSON, so treat as plain text.
-             return { text: responseText };
-          }
-      } else if (jsonStartIndex > 0) {
-        // This is a mixed response with text and a JSON object
+      if (jsonStartIndex > 0) {
         const textPart = responseText.substring(0, jsonStartIndex).trim();
         const jsonPart = responseText.substring(jsonStartIndex);
         
@@ -117,15 +112,42 @@ const flow = ai.defineFlow(
           const parsedRecipe = RecipeSchema.safeParse(parsedJson);
 
           if (parsedRecipe.success) {
-            return { text: textPart, recipe: parsedRecipe.data };
+            const formattedRecipe = formatRecipeToString(parsedRecipe.data);
+            return { text: `${textPart}\n\n${formattedRecipe}` };
           }
         } catch (e) {
-          // Fallback to returning just the text part if JSON is invalid
-          return { text: textPart };
+            // If JSON parsing fails, just return the text part
+            return { text: textPart };
         }
       }
 
-      // Fallback for any other case: return the plain text
+      // If not a mixed response, try parsing as a pure JSON response (array)
+      try {
+          const data = JSON.parse(responseText);
+
+          if (Array.isArray(data) && data.length > 0) {
+              const firstItem = data[0];
+              
+              // Case 1: It's a recipe
+              const parsedRecipe = RecipeSchema.safeParse(firstItem);
+              if (parsedRecipe.success) {
+                  return { text: formatRecipeToString(parsedRecipe.data) };
+              }
+              // Case 2: It's an error message
+              if (firstItem.erro) {
+                  return { text: firstItem.erro };
+              }
+              // Case 3: It's a conversational output
+              if (firstItem.output) {
+                  return { text: firstItem.output };
+              }
+          }
+      } catch (e) {
+         // Not a valid JSON, so treat as plain text.
+         return { text: responseText };
+      }
+
+      // Fallback for any other case (e.g., pure text that wasn't caught before)
       if (responseText) {
           return { text: responseText };
       }

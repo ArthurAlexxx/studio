@@ -64,8 +64,7 @@ export default function ChefPage() {
         const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: response.text || '',
-            recipe: response.recipe,
+            content: response.text || "Não obtive uma resposta.",
         };
         
         setMessages(prev => [...prev, aiMessage]);
