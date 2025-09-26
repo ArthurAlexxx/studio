@@ -77,7 +77,12 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
           body: JSON.stringify(payload),
         }).then(response => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response.json();
+            // Check if the response has content before trying to parse it as JSON
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf('application/json') !== -1) {
+                return response.json();
+            }
+            return null; // Return null if no JSON content
         });
       });
       
