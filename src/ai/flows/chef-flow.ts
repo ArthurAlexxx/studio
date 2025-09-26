@@ -90,10 +90,15 @@ const flow = ai.defineFlow(
           return firstItem.erro;
         }
 
+        // Check for a simple text output for chat continuation
+        if (firstItem.output && typeof firstItem.output === 'string') {
+            return firstItem.output;
+        }
+        
         // Check for the recipe format
         const parsedRecipe = RecipeSchema.safeParse(firstItem);
         if (parsedRecipe.success) {
-          return parsedRecipe.data; // Return the object directly
+          return parsedRecipe.data;
         }
       }
       
