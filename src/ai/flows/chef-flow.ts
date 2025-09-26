@@ -98,39 +98,27 @@ const flow = ai.defineFlow(
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
-      const responseText = await response.text();
-      if (!responseText) {
-          return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
-      }
-      
-      try {
-        const responseData = JSON.parse(responseText);
+      const responseData = await response.json();
 
-        // Handle array format: [{...recipe}] or [{ "output": "Hello" }]
-        if (Array.isArray(responseData) && responseData.length > 0) {
-          const firstItem = responseData[0];
-          
-          // Try to parse as a recipe first
-          const parsedRecipe = RecipeSchema.safeParse(firstItem);
-          if (parsedRecipe.success) {
-              return formatRecipeToString(parsedRecipe.data);
-          }
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        const recipeData = responseData[0];
+        const parsedRecipe = RecipeSchema.safeParse(recipeData);
 
-          // Fallback to check for a simple chat message
-          if (typeof firstItem.output === 'string') {
-              return firstItem.output;
-          }
+        if (parsedRecipe.success) {
+          return formatRecipeToString(parsedRecipe.data);
         }
-      } catch (e) {
-        // If JSON.parse fails, it means the response is a plain string.
-        return responseText;
+      }
+
+      // Fallback for simple text message if recipe parsing fails
+      if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].output) {
+          return responseData[0].output;
       }
       
-      throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
+      throw new Error("A resposta do webhook não está no formato de receita esperado.");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
-      return `Desculpe, ocorreu um erro ao processar a resposta: ${error.message}`;
+      return `Desculpe, ocorreu um erro ao processar a resposta do Chef. Por favor, verifique o formato do webhook.`;
     }
   }
 );
