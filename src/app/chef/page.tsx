@@ -13,8 +13,51 @@ import { Loader2, ChefHat } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import ChatView from '@/components/chat-view';
 import { type Message, initialMessages } from '@/components/chat-message';
-import { chefVirtualFlow } from '@/ai/flows/chef-flow';
+import { chefVirtualFlow, RecipeSchema, type Recipe } from '@/ai/flows/chef-flow';
 import RecipeDisplay from '@/components/recipe-display';
+
+// Helper to parse the raw text from the flow
+const parseResponse = (responseText: string): { text: string, recipe?: Recipe } => {
+    // Check for a mixed response (text + JSON)
+    const jsonStartIndex = responseText.indexOf('{');
+    if (jsonStartIndex > 0) {
+        const textPart = responseText.substring(0, jsonStartIndex).trim();
+        const jsonPart = responseText.substring(jsonStartIndex);
+        
+        try {
+            const parsedJson = JSON.parse(jsonPart);
+            const parsedRecipe = RecipeSchema.safeParse(parsedJson);
+            if (parsedRecipe.success) {
+                return { text: textPart, recipe: parsedRecipe.data };
+            }
+        } catch (e) {
+            // If JSON parsing fails, just return the text part
+            return { text: textPart };
+        }
+    }
+
+    // Try parsing as a pure JSON response (array or object)
+    try {
+        const data = JSON.parse(responseText);
+        const item = Array.isArray(data) ? data[0] : data;
+
+        // It's a recipe
+        const parsedRecipe = RecipeSchema.safeParse(item);
+        if (parsedRecipe.success) {
+            return { text: '', recipe: parsedRecipe.data };
+        }
+
+        // It's an error or conversational output
+        if (item.erro) return { text: item.erro };
+        if (item.output) return { text: item.output };
+    } catch (e) {
+        // Not a valid JSON, so treat as plain text.
+    }
+
+    // Fallback for pure text or any other case
+    return { text: responseText };
+};
+
 
 export default function ChefPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -60,11 +103,13 @@ export default function ChefPage() {
 
       try {
         const response = await chefVirtualFlow({ prompt: input, userId: user.uid });
+        const { text, recipe } = parseResponse(response.text);
         
         const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: response.text || "Não obtive uma resposta.",
+            content: text || (recipe ? '' : "Não obtive uma resposta clara."),
+            recipe: recipe,
         };
         
         setMessages(prev => [...prev, aiMessage]);

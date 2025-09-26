@@ -10,6 +10,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  recipe?: Recipe;
 }
 
 interface ChatMessageProps {
@@ -30,7 +31,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         'max-w-xl lg:max-w-3xl rounded-2xl p-4',
         isAssistant ? 'bg-secondary rounded-tl-none' : 'bg-primary text-primary-foreground rounded-tr-none'
       )}>
-        <p className="text-base whitespace-pre-wrap">{message.content}</p>
+        {message.content && <p className="text-base whitespace-pre-wrap">{message.content}</p>}
+        {message.recipe && (
+          <div className={cn(message.content && 'mt-4')}>
+            <RecipeDisplay recipe={message.recipe} isGenerating={false} isChatMode={true} />
+          </div>
+        )}
       </div>
     </div>
   );
