@@ -26,7 +26,7 @@ const RecipeSchema = z.object({
   }),
 });
 
-export type Recipe = z.infer<typeof RecipeSchema>;
+type Recipe = z.infer<typeof RecipeSchema>;
 
 const FlowInputSchema = z.object({
   prompt: z.string(),
@@ -35,8 +35,37 @@ const FlowInputSchema = z.object({
 
 type FlowInput = z.infer<typeof FlowInputSchema>;
 
+// Helper function to format the recipe object into a readable string
+function formatRecipeToString(recipe: Recipe): string {
+    const ingredients = recipe.ingredients.map(item => `- ${item}`).join('\n');
+    const instructions = recipe.instructions.map((step, index) => `${index + 1}. ${step}`).join('\n');
+
+    return `
+*${recipe.title}*
+
+${recipe.description}
+
+*Tempo de Preparo:* ${recipe.prepTime}
+*Tempo de Cozimento:* ${recipe.cookTime}
+*Rendimento:* ${recipe.servings}
+
+*Ingredientes:*
+${ingredients}
+
+*Modo de Preparo:*
+${instructions}
+
+*Informação Nutricional (por porção):*
+- Calorias: ${recipe.nutrition.calories}
+- Proteínas: ${recipe.nutrition.protein}
+- Carboidratos: ${recipe.nutrition.carbs}
+- Gorduras: ${recipe.nutrition.fat}
+    `.trim();
+}
+
+
 // Exported function to be called from the client
-export async function chefVirtualFlow(input: FlowInput): Promise<Recipe | string> {
+export async function chefVirtualFlow(input: FlowInput): Promise<string> {
   return await flow(input);
 }
 
@@ -45,7 +74,7 @@ const flow = ai.defineFlow(
   {
     name: 'chefVirtualFlow',
     inputSchema: FlowInputSchema,
-    outputSchema: z.union([RecipeSchema, z.string()]),
+    outputSchema: z.string(),
   },
   async ({ prompt, userId }) => {
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
@@ -71,31 +100,38 @@ const flow = ai.defineFlow(
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
+      // Handle potential empty response
       const responseText = await response.text();
       if (!responseText) {
-          // Handle empty response body
           return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
       }
-
       const responseData = JSON.parse(responseText);
-      
-      // Handle array vs. object responses
-      let potentialRecipe = Array.isArray(responseData) && responseData.length > 0
+
+      // It can be an array with the recipe or a direct chat message object.
+      let potentialRecipeData = Array.isArray(responseData) && responseData.length > 0
         ? responseData[0]
         : responseData;
+      
+      // If it's a chat message like { output: "Hello" }
+      if (typeof potentialRecipeData.output === 'string') {
+        return potentialRecipeData.output;
+      }
+      
+      // Try to parse as a full recipe
+      const parsedRecipe = RecipeSchema.safeParse(potentialRecipeData);
 
-      // Handle text output from chat
-      if (typeof potentialRecipe.output === 'string') {
-        // If there's an `output` field with a string, it's likely a chat message
-        return potentialRecipe.output;
-      }
-      
-      const parsedRecipe = RecipeSchema.safeParse(potentialRecipe);
       if (parsedRecipe.success) {
-        return parsedRecipe.data;
+        // Format the valid recipe into a string
+        return formatRecipeToString(parsedRecipe.data);
+      } else {
+         // If it's not a recipe and not a chat, it might be a simple string response
+         if(typeof potentialRecipeData === 'string'){
+            return potentialRecipeData;
+         }
+        // If validation fails, it's an unexpected format
+        console.error("Zod validation errors:", parsedRecipe.error.errors);
+        throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
       }
-      
-      throw new Error("The webhook response was not in a recognized format (Recipe or chat output).");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
