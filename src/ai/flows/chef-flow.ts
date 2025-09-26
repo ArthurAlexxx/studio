@@ -29,7 +29,6 @@ const RecipeSchema = z.object({
 });
 
 export type Recipe = z.infer<typeof RecipeSchema>;
-export { RecipeSchema };
 
 
 const FlowInputSchema = z.object({

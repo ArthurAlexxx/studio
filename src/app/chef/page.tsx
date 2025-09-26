@@ -13,8 +13,25 @@ import { Loader2, ChefHat } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import ChatView from '@/components/chat-view';
 import { type Message, initialMessages } from '@/components/chat-message';
-import { chefVirtualFlow, RecipeSchema, type Recipe } from '@/ai/flows/chef-flow';
+import { chefVirtualFlow, type Recipe } from '@/ai/flows/chef-flow';
 import RecipeDisplay from '@/components/recipe-display';
+import { z } from 'zod';
+
+const RecipeSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  prepTime: z.string(),
+  cookTime: z.string(),
+  servings: z.string(),
+  ingredients: z.array(z.string()),
+  instructions: z.array(z.string()),
+  nutrition: z.object({
+    calories: z.string(),
+    protein: z.string(),
+    carbs: z.string(),
+    fat: z.string(),
+  }),
+});
 
 // Helper to parse the raw text from the flow
 const parseResponse = (responseText: string): { text: string, recipe?: Recipe } => {
