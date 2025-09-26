@@ -82,64 +82,58 @@ const flow = ai.defineFlow(
       
       const responseText = await response.text();
 
-      // Find the start of the JSON object
+      // Case 1: Response contains both text and a JSON object for the recipe
       const jsonStartIndex = responseText.indexOf('{');
-      const jsonStartBracketIndex = responseText.indexOf('[');
-      
-      let jsonStart = -1;
+      if (jsonStartIndex > 0) {
+        const textPart = responseText.substring(0, jsonStartIndex).trim();
+        const jsonPart = responseText.substring(jsonStartIndex);
+        
+        try {
+          const parsedJson = JSON.parse(jsonPart);
+          const parsedRecipe = RecipeSchema.safeParse(parsedJson);
 
-      if (jsonStartIndex !== -1 && jsonStartBracketIndex !== -1) {
-          jsonStart = Math.min(jsonStartIndex, jsonStartBracketIndex);
-      } else if (jsonStartIndex !== -1) {
-          jsonStart = jsonStartIndex;
-      } else {
-          jsonStart = jsonStartBracketIndex;
+          if (parsedRecipe.success) {
+            return { text: textPart, recipe: parsedRecipe.data };
+          }
+        } catch (e) {
+          // Fallback to returning just the text part if JSON is invalid
+          return { text: textPart };
+        }
       }
 
-      const textPart = jsonStart > 0 ? responseText.substring(0, jsonStart).trim() : '';
-      const jsonPart = jsonStart !== -1 ? responseText.substring(jsonStart) : '';
-      
-      if (jsonPart) {
-         try {
-            let data = JSON.parse(jsonPart);
-            
-            // Handle array format, e.g., from n8n which returns [ { ... } ]
-            const recipeData = Array.isArray(data) ? data[0] : data;
+      // Case 2: Response is purely JSON (as an array)
+      try {
+        const data = JSON.parse(responseText);
 
-            // 1. Check for a valid recipe
-            const parsedRecipe = RecipeSchema.safeParse(recipeData);
-            if (parsedRecipe.success) {
-                return {
-                    text: textPart, // Return any introductory text
-                    recipe: parsedRecipe.data,
-                };
-            }
-            
-            // 2. Check for an error message
-            if (recipeData.erro && typeof recipeData.erro === 'string') {
-              return { text: recipeData.erro };
-            }
+        if (Array.isArray(data) && data.length > 0) {
+          const firstItem = data[0];
 
-            // 3. Check for a chat output message
-            if (recipeData.output && typeof recipeData.output === 'string') {
-              return { text: recipeData.output };
-            }
+          // Check for a valid recipe
+          const parsedRecipe = RecipeSchema.safeParse(firstItem);
+          if (parsedRecipe.success) {
+            return { recipe: parsedRecipe.data };
+          }
 
-         } catch (e) {
-             // JSON parsing failed, but we might have a valid text part.
-             if (textPart) {
-                return { text: textPart };
-             }
-             // If no text part and JSON fails, return the original raw text.
-             return { text: responseText };
-         }
+          // Check for an error message
+          if (firstItem.erro && typeof firstItem.erro === 'string') {
+            return { text: firstItem.erro };
+          }
+
+          // Check for a chat output message
+          if (firstItem.output && typeof firstItem.output === 'string') {
+            return { text: firstItem.output };
+          }
+        }
+      } catch (e) {
+        // Not a valid JSON, so it might be plain text. Fall through.
       }
 
-      // If we are here, it means we likely only have a text response.
+      // Case 3: Response is just plain text
       if (responseText) {
           return { text: responseText };
       }
 
+      // Fallback for empty or unprocessable responses
       return { text: "Desculpe, a resposta do serviço não pôde ser processada." };
 
     } catch (error: any) {
@@ -148,3 +142,4 @@ const flow = ai.defineFlow(
     }
   }
 );
+
