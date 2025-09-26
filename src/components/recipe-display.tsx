@@ -72,9 +72,9 @@ export default function RecipeDisplay({ recipe, isGenerating, isChatMode = false
         <Separator />
         <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Utensils className="h-5 w-5 text-primary" /> Modo de Preparo</h3>
-            <ol className="list-decimal list-inside space-y-3 pl-2">
-                {recipe.instructions.map((step, index) => <li key={index}>{step}</li>)}
-            </ol>
+            <ul className="space-y-3">
+                {recipe.instructions.map((step, index) => <li key={index} className="flex"><span className="flex-shrink-0 mr-2"></span><span>{step}</span></li>)}
+            </ul>
         </div>
         <Separator />
          <div>
