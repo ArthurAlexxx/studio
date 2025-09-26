@@ -100,38 +100,37 @@ const flow = ai.defineFlow(
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
-      // Handle potential empty response
       const responseText = await response.text();
       if (!responseText) {
           return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
       }
       const responseData = JSON.parse(responseText);
 
-      // It can be an array with the recipe or a direct chat message object.
-      let potentialRecipeData = Array.isArray(responseData) && responseData.length > 0
-        ? responseData[0]
-        : responseData;
-      
-      // If it's a chat message like { output: "Hello" }
-      if (typeof potentialRecipeData.output === 'string') {
-        return potentialRecipeData.output;
+      // New logic to handle the nested structure: [{ "combinedRecipe": [{...recipe}] }]
+      if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].combinedRecipe && Array.isArray(responseData[0].combinedRecipe) && responseData[0].combinedRecipe.length > 0) {
+        const recipeObject = responseData[0].combinedRecipe[0];
+        const parsedRecipe = RecipeSchema.safeParse(recipeObject);
+        if (parsedRecipe.success) {
+            return formatRecipeToString(parsedRecipe.data);
+        } else {
+            console.error("Zod validation errors for combinedRecipe:", parsedRecipe.error.errors);
+            throw new Error("A receita combinada recebida do webhook não está no formato esperado.");
+        }
       }
       
-      // Try to parse as a full recipe
-      const parsedRecipe = RecipeSchema.safeParse(potentialRecipeData);
+      // Fallback for simple chat message like { output: "Hello" } or [{ output: "Hello" }]
+      let potentialMessageData = Array.isArray(responseData) ? responseData[0] : responseData;
+      if (potentialMessageData && typeof potentialMessageData.output === 'string') {
+        return potentialMessageData.output;
+      }
+      
+      // Fallback for a simple string response
+      if(typeof responseData === 'string'){
+         return responseData;
+      }
 
-      if (parsedRecipe.success) {
-        // Format the valid recipe into a string
-        return formatRecipeToString(parsedRecipe.data);
-      } else {
-         // If it's not a recipe and not a chat, it might be a simple string response
-         if(typeof potentialRecipeData === 'string'){
-            return potentialRecipeData;
-         }
-        // If validation fails, it's an unexpected format
-        console.error("Zod validation errors:", parsedRecipe.error.errors);
-        throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
-      }
+      console.error("Unexpected webhook response format:", responseData);
+      throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
