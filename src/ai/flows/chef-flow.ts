@@ -100,25 +100,27 @@ const flow = ai.defineFlow(
       
       const responseData = await response.json();
 
+      // Check if the response is an array and has content
       if (Array.isArray(responseData) && responseData.length > 0) {
-        const recipeData = responseData[0];
-        const parsedRecipe = RecipeSchema.safeParse(recipeData);
+        const firstItem = responseData[0];
 
+        // Check for the explicit error format
+        if (firstItem.erro && typeof firstItem.erro === 'string') {
+          return firstItem.erro;
+        }
+
+        // Check for the recipe format
+        const parsedRecipe = RecipeSchema.safeParse(firstItem);
         if (parsedRecipe.success) {
           return formatRecipeToString(parsedRecipe.data);
         }
       }
-
-      // Fallback for simple text message if recipe parsing fails
-      if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].output) {
-          return responseData[0].output;
-      }
       
-      throw new Error("A resposta do webhook não está no formato de receita esperado.");
+      throw new Error("A resposta do webhook não está em um formato esperado (receita ou erro).");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
-      return `Desculpe, ocorreu um erro ao processar a resposta do Chef. Por favor, verifique o formato do webhook.`;
+      return `Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.`;
     }
   }
 );
