@@ -83,51 +83,61 @@ const flow = ai.defineFlow(
       const responseText = await response.text();
 
       // Find the start of the JSON object
-      const jsonStart = responseText.indexOf('{');
+      const jsonStartIndex = responseText.indexOf('{');
+      const jsonStartBracketIndex = responseText.indexOf('[');
+      
+      let jsonStart = -1;
+
+      if (jsonStartIndex !== -1 && jsonStartBracketIndex !== -1) {
+          jsonStart = Math.min(jsonStartIndex, jsonStartBracketIndex);
+      } else if (jsonStartIndex !== -1) {
+          jsonStart = jsonStartIndex;
+      } else {
+          jsonStart = jsonStartBracketIndex;
+      }
+
       const textPart = jsonStart > 0 ? responseText.substring(0, jsonStart).trim() : '';
       const jsonPart = jsonStart !== -1 ? responseText.substring(jsonStart) : '';
       
       if (jsonPart) {
          try {
-            const parsedJson = JSON.parse(jsonPart);
+            let data = JSON.parse(jsonPart);
             
-            // Handle array format, e.g. from n8n
-            const data = Array.isArray(parsedJson) ? parsedJson[0] : parsedJson;
+            // Handle array format, e.g., from n8n which returns [ { ... } ]
+            const recipeData = Array.isArray(data) ? data[0] : data;
 
-            // Check for recipe
-            const parsedRecipe = RecipeSchema.safeParse(data);
+            // 1. Check for a valid recipe
+            const parsedRecipe = RecipeSchema.safeParse(recipeData);
             if (parsedRecipe.success) {
                 return {
-                    text: textPart,
+                    text: textPart, // Return any introductory text
                     recipe: parsedRecipe.data,
                 };
             }
+            
+            // 2. Check for an error message
+            if (recipeData.erro && typeof recipeData.erro === 'string') {
+              return { text: recipeData.erro };
+            }
+
+            // 3. Check for a chat output message
+            if (recipeData.output && typeof recipeData.output === 'string') {
+              return { text: recipeData.output };
+            }
+
          } catch (e) {
-             // JSON parsing failed, but we might have text content
+             // JSON parsing failed, but we might have a valid text part.
              if (textPart) {
                 return { text: textPart };
              }
-             console.error("Failed to parse JSON part of the response", e);
-             return { text: "Desculpe, a resposta do serviço está em um formato inválido." };
+             // If no text part and JSON fails, return the original raw text.
+             return { text: responseText };
          }
       }
 
-      // If no JSON part, or parsing failed, return the text part
-      // This also handles `erro` and `output` cases if they are not inside a larger JSON
+      // If we are here, it means we likely only have a text response.
       if (responseText) {
-          try {
-              const data = JSON.parse(responseText);
-              const responseData = Array.isArray(data) ? data[0] : data;
-              if (responseData.erro && typeof responseData.erro === 'string') {
-                return { text: responseData.erro };
-              }
-              if (responseData.output && typeof responseData.output === 'string') {
-                return { text: responseData.output };
-              }
-          } catch(e) {
-             // It's just plain text.
-             return { text: responseText };
-          }
+          return { text: responseText };
       }
 
       return { text: "Desculpe, a resposta do serviço não pôde ser processada." };
