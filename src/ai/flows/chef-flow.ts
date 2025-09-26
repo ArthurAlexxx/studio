@@ -124,11 +124,6 @@ const flow = ai.defineFlow(
         return potentialMessageData.output;
       }
       
-      // Fallback for a simple string response
-      if(typeof responseData === 'string'){
-         return responseData;
-      }
-
       console.error("Unexpected webhook response format:", responseData);
       throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
 
