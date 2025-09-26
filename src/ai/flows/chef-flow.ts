@@ -4,6 +4,8 @@
  * @fileOverview A flow to generate recipes by calling an external n8n webhook.
  *
  * - chefVirtualFlow - The main flow function.
+ * - Recipe - The type for a recipe object.
+ * - ChefFlowOutput - The union type for the flow's output.
  */
 
 import { ai } from '@/ai/genkit';
@@ -26,7 +28,7 @@ const RecipeSchema = z.object({
   }),
 });
 
-type Recipe = z.infer<typeof RecipeSchema>;
+export type Recipe = z.infer<typeof RecipeSchema>;
 
 const FlowInputSchema = z.object({
   prompt: z.string(),
@@ -35,37 +37,16 @@ const FlowInputSchema = z.object({
 
 type FlowInput = z.infer<typeof FlowInputSchema>;
 
-// Helper function to format the recipe object into a readable string
-function formatRecipeToString(recipe: Recipe): string {
-    const ingredients = recipe.ingredients.map(item => `- ${item}`).join('\n');
-    const instructions = recipe.instructions.map((step) => `${step}`).join('\n');
+// The output can be either a recipe object or a string message
+const ChefFlowOutputSchema = z.union([
+    RecipeSchema,
+    z.string()
+]);
 
-    return `
-🍽️ ${recipe.title}
-
-${recipe.description}
-
-⏱️ Tempo de preparo: ${recipe.prepTime}
-🔥 Tempo de cozimento: ${recipe.cookTime}
-👥 Porções: ${recipe.servings}
-
-📝 Ingredientes:
-${ingredients}
-
-👨‍🍳 Modo de Preparo:
-${instructions}
-
-🔎 Informação Nutricional:
-- Calorias: ${recipe.nutrition.calories}
-- Proteínas: ${recipe.nutrition.protein}
-- Carboidratos: ${recipe.nutrition.carbs}
-- Gorduras: ${recipe.nutrition.fat}
-    `.trim();
-}
-
+export type ChefFlowOutput = z.infer<typeof ChefFlowOutputSchema>;
 
 // Exported function to be called from the client
-export async function chefVirtualFlow(input: FlowInput): Promise<string> {
+export async function chefVirtualFlow(input: FlowInput): Promise<ChefFlowOutput> {
   return await flow(input);
 }
 
@@ -74,7 +55,7 @@ const flow = ai.defineFlow(
   {
     name: 'chefVirtualFlow',
     inputSchema: FlowInputSchema,
-    outputSchema: z.string(),
+    outputSchema: ChefFlowOutputSchema,
   },
   async ({ prompt, userId }) => {
     const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
@@ -112,11 +93,12 @@ const flow = ai.defineFlow(
         // Check for the recipe format
         const parsedRecipe = RecipeSchema.safeParse(firstItem);
         if (parsedRecipe.success) {
-          return formatRecipeToString(parsedRecipe.data);
+          return parsedRecipe.data; // Return the object directly
         }
       }
       
-      throw new Error("A resposta do webhook não está em um formato esperado (receita ou erro).");
+      // Fallback for unexpected formats
+      return "Desculpe, a resposta do serviço não pôde ser processada. Por favor, tente novamente.";
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);

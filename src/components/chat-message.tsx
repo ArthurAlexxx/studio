@@ -3,11 +3,14 @@
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ChefHat, User } from 'lucide-react';
+import type { Recipe } from '@/ai/flows/chef-flow';
+import RecipeDisplay from './recipe-display';
 
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  recipe?: Recipe;
 }
 
 interface ChatMessageProps {
@@ -25,12 +28,15 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </AvatarFallback>
       </Avatar>
       <div className={cn(
-        'max-w-xl lg:max-w-2xl rounded-2xl p-4 whitespace-pre-wrap', // whitespace-pre-wrap to respect newlines
-        isAssistant 
-          ? 'bg-secondary rounded-tl-none' 
-          : 'bg-primary text-primary-foreground rounded-tr-none'
+        'max-w-xl lg:max-w-3xl rounded-2xl',
+        isAssistant && !message.recipe ? 'bg-secondary p-4 rounded-tl-none' : '',
+        !isAssistant ? 'bg-primary text-primary-foreground p-4 rounded-tr-none' : ''
       )}>
-        <p className="text-base">{message.content}</p>
+        {message.recipe ? (
+          <RecipeDisplay recipe={message.recipe} isGenerating={false} isChatMode={true} />
+        ) : (
+          <p className="text-base whitespace-pre-wrap">{message.content}</p>
+        )}
       </div>
     </div>
   );

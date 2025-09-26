@@ -14,7 +14,7 @@ import type { UserProfile } from '@/types/user';
 import ChatView from '@/components/chat-view';
 import { type Message, initialMessages } from '@/components/chat-message';
 import { chefVirtualFlow } from '@/ai/flows/chef-flow';
-
+import RecipeDisplay from '@/components/recipe-display';
 
 export default function ChefPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -59,12 +59,13 @@ export default function ChefPage() {
       setIsResponding(true);
 
       try {
-        const responseContent = await chefVirtualFlow({ prompt: input, userId: user.uid });
+        const response = await chefVirtualFlow({ prompt: input, userId: user.uid });
         
         const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: responseContent,
+            content: typeof response === 'string' ? response : '',
+            recipe: typeof response === 'object' ? response : undefined
         };
         
         setMessages(prev => [...prev, aiMessage]);
