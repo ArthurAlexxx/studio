@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import type { MealData } from '@/types/meal';
 import { db } from '@/lib/firebase/client';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { analyzeFood } from '@/ai/flows/meal-analyze-flow';
 
 const foodItemSchema = z.object({
   name: z.string().min(1, 'O nome do alimento é obrigatório.'),
@@ -63,14 +62,31 @@ export default function AddMealModal({ isOpen, onOpenChange, onMealAdded, userId
       return;
     }
     
+    const webhookUrl = 'https://arthuralex.app.n8n.cloud/webhook-test/d6381d21-a089-498f-8248-6d7802c0a1a5';
+    
     try {
-      const requests = data.foods.map(food => 
-        analyzeFood({
+      const requests = data.foods.map(food => {
+        const payload = {
+            action: 'ref',
             alimento: food.name,
             porcao: food.portion,
             unidade: food.unit,
-        })
-      );
+        };
+        return fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = response.json();
+                // The webhook returns an array, so we take the first element
+                return Array.isArray(data) ? data[0] : data;
+            }
+            return null; // Return null if no JSON content
+        });
+      });
       
       const results = (await Promise.all(requests)).filter((r): r is MealData => r !== null);
 
