@@ -87,6 +87,7 @@ const flow = ai.defineFlow(
       }
     };
 
+    let responseText = '';
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -95,24 +96,15 @@ const flow = ai.defineFlow(
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Webhook call failed:", errorText);
         throw new Error(`Webhook returned an error: ${response.statusText}`);
       }
       
-      const responseText = await response.text();
+      responseText = await response.text();
       if (!responseText) {
           return "Recebi sua mensagem, mas não tenho uma resposta no momento.";
       }
       
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-      } catch (e) {
-        // If parsing fails, it's likely a plain text response
-        return responseText;
-      }
-
+      const responseData = JSON.parse(responseText);
 
       // Handle array format: [{...recipe}] or [{ "output": "Hello" }]
       if (Array.isArray(responseData) && responseData.length > 0) {
@@ -130,15 +122,16 @@ const flow = ai.defineFlow(
         }
       }
       
-      console.error("Unexpected webhook response format:", responseData);
       throw new Error("A resposta do webhook não é uma receita ou uma mensagem de texto válida.");
 
     } catch (error: any) {
       console.error('Error in chefVirtualFlow:', error);
-      if (error instanceof z.ZodError) {
-          console.error("Zod validation errors:", error.errors);
+       // If parsing failed or format is wrong, return the raw text if available.
+      if (responseText) {
+        return responseText;
       }
-      throw new Error(`Failed to process response from webhook: ${error.message}`);
+      // Fallback error message if everything else fails
+      return `Desculpe, ocorreu um erro ao processar a resposta: ${error.message}`;
     }
   }
 );
