@@ -12,15 +12,15 @@ import { auth, db } from '@/lib/firebase/client';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, query, where, doc, onSnapshot, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { subDays, eachDayOfInterval, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ConsumedFoodsList from '@/components/consumed-foods-list';
 import AppLayout from '@/components/app-layout';
 import WaterTrackerCard from '@/components/water-tracker-card';
 import ChartsSection from '@/components/charts-section';
+import EditMealModal from '@/components/edit-meal-modal';
 
 const getLocalDateString = (date = new Date()) => {
-    // Retorna a data no formato YYYY-MM-DD para o fuso horário de São Paulo
     return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(date);
 }
 
@@ -37,6 +37,8 @@ export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
 
   const handleMealAdded = useCallback(() => {
     toast({
@@ -62,6 +64,26 @@ export default function DashboardPage() {
             description: error.message || "Não foi possível remover a refeição.",
             variant: "destructive"
         });
+    }
+  }, [toast]);
+
+  const handleMealUpdate = useCallback(async (updatedMeal: MealEntry) => {
+    const mealRef = doc(db, 'meal_entries', updatedMeal.id);
+    try {
+      await updateDoc(mealRef, {
+        mealData: updatedMeal.mealData,
+      });
+      toast({
+        title: 'Refeição Atualizada!',
+        description: 'Os valores nutricionais foram atualizados com sucesso.',
+      });
+      setEditingMeal(null);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar',
+        description: error.message || 'Não foi possível salvar as alterações.',
+        variant: 'destructive',
+      });
     }
   }, [toast]);
 
@@ -254,9 +276,7 @@ export default function DashboardPage() {
     ], [totalNutrients]);
     
     const today = new Date();
-    const weekStart = startOfWeek(today, { locale: ptBR });
-    const weekEnd = endOfWeek(today, { locale: ptBR });
-    const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    const daysOfWeek = eachDayOfInterval({ start: subDays(today, 6), end: today });
     
     const weeklyCaloriesData = useMemo(() => daysOfWeek.map(day => {
         const dateStr = getLocalDateString(day);
@@ -310,6 +330,7 @@ export default function DashboardPage() {
                     <ConsumedFoodsList 
                         mealEntries={mealEntries} 
                         onMealDeleted={handleMealDeleted}
+                        onMealEdit={(meal) => setEditingMeal(meal)}
                     />
                 </div>
                 <div className="lg:col-span-1">
@@ -329,6 +350,14 @@ export default function DashboardPage() {
               weeklyHydrationData={weeklyHydrationData}
             />
         </div>
+         {editingMeal && (
+            <EditMealModal
+                isOpen={!!editingMeal}
+                onOpenChange={() => setEditingMeal(null)}
+                mealEntry={editingMeal}
+                onMealUpdate={handleMealUpdate}
+            />
+        )}
     </AppLayout>
   );
 }

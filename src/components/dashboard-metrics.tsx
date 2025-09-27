@@ -30,7 +30,7 @@ export default function DashboardMetrics({ totalNutrients, userProfile }: Dashbo
         currentStreak={userProfile?.currentStreak || 0}
       />
       <p className="text-xs text-muted-foreground mt-4 text-center animate-fade-in">
-        Atenção: Os valores nutricionais são aproximados e calculados por uma IA. Podem ocorrer imprecisões.
+        Atenção: Os valores nutricionais são aproximados e calculados por IA. Se souber os valores corretos, você pode editar cada refeição.
       </p>
     </section>
   );

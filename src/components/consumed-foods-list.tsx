@@ -2,13 +2,16 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { MealEntry } from '@/types/meal';
-import { Utensils, Trash2, CalendarOff, Flame, Beef, Wheat, Donut } from 'lucide-react';
+import { Utensils, Trash2, CalendarOff, Flame, Beef, Wheat, Donut, Pencil } from 'lucide-react';
 import { Button } from './ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+
 
 interface ConsumedFoodsListProps {
   mealEntries: MealEntry[];
   onMealDeleted: (entryId: string) => void;
+  onMealEdit: (mealEntry: MealEntry) => void;
   showTotals?: boolean;
 }
 
@@ -22,11 +25,7 @@ const NutrientItem = ({ value, label, icon: Icon, colorClass }: { value: string;
   </div>
 );
 
-export default function ConsumedFoodsList({ mealEntries, onMealDeleted, showTotals = true }: ConsumedFoodsListProps) {
-
-  const handleLocalMealDeleted = (entryId: string) => {
-    onMealDeleted(entryId);
-  };
+export default function ConsumedFoodsList({ mealEntries, onMealDeleted, onMealEdit, showTotals = true }: ConsumedFoodsListProps) {
 
   if (mealEntries.length === 0) {
     return (
@@ -65,9 +64,10 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, showTota
           <Utensils className="h-6 w-6 text-primary" />
           Refeições do Dia
         </CardTitle>
-        {showTotals && <CardDescription>Lista detalhada das refeições e seus valores nutricionais.</CardDescription>}
+        {showTotals && <CardDescription>Lista detalhada das refeições e seus valores nutricionais. Clique em <Pencil className='inline h-3 w-3'/> para editar.</CardDescription>}
       </CardHeader>
       <CardContent className="space-y-3 max-h-[500px] overflow-y-auto pr-3">
+       <TooltipProvider>
         {mealEntries.map((entry) => (
           <div key={entry.id} className="rounded-xl border p-4 transition-shadow hover:shadow-md">
             <div className="flex justify-between items-start mb-3">
@@ -77,27 +77,47 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, showTota
                   {entry.mealData.alimentos.map(f => f.nome).join(', ')}
                 </p>
               </div>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0">
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta ação não pode ser desfeita. Isso removerá permanentemente a refeição dos seus registros.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleLocalMealDeleted(entry.id)} className="bg-destructive hover:bg-destructive/90">
-                        Sim, remover
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-blue-500/10 hover:text-blue-500" onClick={() => onMealEdit(entry)}>
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Editar Valores</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Remover Refeição</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso removerá permanentemente a refeição dos seus registros.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onMealDeleted(entry.id)} className="bg-destructive hover:bg-destructive/90">
+                            Sim, remover
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
             
             <Separator />
@@ -110,6 +130,7 @@ export default function ConsumedFoodsList({ mealEntries, onMealDeleted, showTota
             </div>
           </div>
         ))}
+        </TooltipProvider>
       </CardContent>
     </Card>
   );
