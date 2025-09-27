@@ -29,6 +29,9 @@ export default function DashboardMetrics({ totalNutrients, userProfile }: Dashbo
         proteinGoal={proteinGoal}
         currentStreak={userProfile?.currentStreak || 0}
       />
+      <p className="text-xs text-muted-foreground mt-4 text-center animate-fade-in">
+        Atenção: Os valores nutricionais são aproximados e calculados por uma IA. Podem ocorrer imprecisões.
+      </p>
     </section>
   );
 }
