@@ -38,10 +38,10 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
   useEffect(() => {
     if (mealEntry) {
       form.reset({
-        calorias: mealEntry.mealData.totais.calorias,
-        proteinas: mealEntry.mealData.totais.proteinas,
-        carboidratos: mealEntry.mealData.totais.carboidratos,
-        gorduras: mealEntry.mealData.totais.gorduras,
+        calorias: parseFloat(mealEntry.mealData.totais.calorias.toFixed(2)),
+        proteinas: parseFloat(mealEntry.mealData.totais.proteinas.toFixed(2)),
+        carboidratos: parseFloat(mealEntry.mealData.totais.carboidratos.toFixed(2)),
+        gorduras: parseFloat(mealEntry.mealData.totais.gorduras.toFixed(2)),
       });
     }
   }, [mealEntry, form]);
@@ -104,7 +104,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                     <FormItem>
                     <FormLabel className="font-semibold">Calorias (kcal)</FormLabel>
                     <FormControl>
-                        <Input type="number" step="any" placeholder="Ex: 500" {...field} />
+                        <Input type="number" step="0.01" placeholder="Ex: 500" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -118,7 +118,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                     <FormItem>
                     <FormLabel className="font-semibold">Proteínas (g)</FormLabel>
                     <FormControl>
-                        <Input type="number" step="any" placeholder="Ex: 30" {...field} />
+                        <Input type="number" step="0.01" placeholder="Ex: 30" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -132,7 +132,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                     <FormItem>
                     <FormLabel className="font-semibold">Carboidratos (g)</FormLabel>
                     <FormControl>
-                        <Input type="number" step="any" placeholder="Ex: 55" {...field} />
+                        <Input type="number" step="0.01" placeholder="Ex: 55" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -146,7 +146,7 @@ export default function EditMealModal({ isOpen, onOpenChange, mealEntry, onMealU
                     <FormItem>
                     <FormLabel className="font-semibold">Gorduras (g)</FormLabel>
                     <FormControl>
-                        <Input type="number" step="any" placeholder="Ex: 20" {...field} />
+                        <Input type="number" step="0.01" placeholder="Ex: 20" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

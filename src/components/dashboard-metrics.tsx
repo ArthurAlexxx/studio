@@ -1,6 +1,7 @@
 // src/components/dashboard-metrics.tsx
 import type { UserProfile } from '@/types/user';
 import SummaryCards from './summary-cards';
+import { Pencil } from 'lucide-react';
 
 interface DashboardMetricsProps {
   totalNutrients: {
@@ -29,8 +30,8 @@ export default function DashboardMetrics({ totalNutrients, userProfile }: Dashbo
         proteinGoal={proteinGoal}
         currentStreak={userProfile?.currentStreak || 0}
       />
-      <p className="text-xs text-muted-foreground mt-4 text-center animate-fade-in">
-        Atenção: Os valores nutricionais são aproximados e calculados por IA. Se souber os valores corretos, você pode editar cada refeição.
+      <p className="text-xs text-muted-foreground mt-4 text-center animate-fade-in max-w-xl mx-auto">
+        Atenção: Os valores nutricionais são aproximados e calculados por IA. Se souber os valores corretos, você pode editar cada refeição clicando no ícone <Pencil className='inline h-3 w-3'/>.
       </p>
     </section>
   );
