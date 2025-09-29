@@ -1,3 +1,4 @@
+
 // src/app/dashboard/page.tsx
 'use client';
 
@@ -52,6 +53,10 @@ export default function DashboardPage() {
         toast({ title: "Erro", description: "ID da refeição ou usuário não encontrado.", variant: "destructive" });
         return;
     }
+    
+    // Optimistic UI update
+    setMealEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+
     try {
         await deleteDoc(doc(db, "meal_entries", entryId));
         toast({
@@ -59,11 +64,16 @@ export default function DashboardPage() {
             description: "A refeição foi removida com sucesso."
         });
     } catch(error: any) {
+        // Revert UI change on error
+        // Note: This requires re-fetching or more complex state management.
+        // For simplicity, we'll rely on the snapshot listener to eventually correct the state.
         toast({
             title: "Erro ao remover refeição",
-            description: error.message || "Não foi possível remover a refeição.",
+            description: error.message || "Não foi possível remover a refeição. A página será atualizada.",
             variant: "destructive"
         });
+        // The onSnapshot listener will automatically handle reverting the UI if deletion fails
+        // by re-adding the item that failed to be deleted from the server.
     }
   }, [toast, user]);
 
@@ -361,3 +371,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    
