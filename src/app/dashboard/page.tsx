@@ -54,7 +54,6 @@ export default function DashboardPage() {
         return;
     }
     
-    // Optimistic UI update
     setMealEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
 
     try {
@@ -64,9 +63,6 @@ export default function DashboardPage() {
             description: "A refeição foi removida com sucesso."
         });
     } catch(error: any) {
-        // Revert UI change on error
-        // Note: This requires re-fetching or more complex state management.
-        // For simplicity, we'll rely on the snapshot listener to eventually correct the state.
         toast({
             title: "Erro ao remover refeição",
             description: error.message || "Não foi possível remover a refeição. A página será atualizada.",
