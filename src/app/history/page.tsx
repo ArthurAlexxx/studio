@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -47,6 +47,26 @@ export default function HistoryPage() {
         return { ...prevProfile, ...updatedProfile };
     });
   }, []);
+
+  const handleMealDeleted = useCallback(async (entryId: string) => {
+    if (!user || !entryId) {
+        toast({ title: "Erro", description: "ID da refeição ou usuário não encontrado.", variant: "destructive" });
+        return;
+    }
+    try {
+        await deleteDoc(doc(db, "meal_entries", entryId));
+        toast({
+            title: "Refeição Removida",
+            description: "A refeição foi removida com sucesso."
+        });
+    } catch(error: any) {
+        toast({
+            title: "Erro ao remover refeição",
+            description: error.message || "Não foi possível remover a refeição.",
+            variant: "destructive"
+        });
+    }
+  }, [toast, user]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -196,13 +216,6 @@ export default function HistoryPage() {
 
   }, [user, selectedDate, selectedMonth, viewMode, toast]);
 
-  const handleMealDeleted = () => {
-    toast({
-        title: "Refeição Removida",
-        description: "A refeição foi removida com sucesso."
-    });
-  }
-
   const { dailyTotals, monthlyTotals } = useMemo(() => {
     const daily = mealEntries.reduce(
         (acc, entry) => {
@@ -305,6 +318,7 @@ export default function HistoryPage() {
                             <ConsumedFoodsList 
                                 mealEntries={mealEntries} 
                                 onMealDeleted={handleMealDeleted}
+                                onMealEdit={() => {}}
                                 showTotals={false}
                             />
                         )}
