@@ -48,8 +48,8 @@ export default function DashboardPage() {
   }, [toast]);
 
   const handleMealDeleted = useCallback(async (entryId: string) => {
-    if (!entryId) {
-        toast({ title: "Erro", description: "ID da refeição não encontrado.", variant: "destructive" });
+    if (!user || !entryId) {
+        toast({ title: "Erro", description: "ID da refeição ou usuário não encontrado.", variant: "destructive" });
         return;
     }
     try {
@@ -65,7 +65,7 @@ export default function DashboardPage() {
             variant: "destructive"
         });
     }
-  }, [toast]);
+  }, [toast, user]);
 
   const handleMealUpdate = useCallback(async (updatedMeal: MealEntry) => {
     const mealRef = doc(db, 'meal_entries', updatedMeal.id);
