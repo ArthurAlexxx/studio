@@ -59,6 +59,7 @@ export default function HistoryPage() {
             title: "Refeição Removida",
             description: "A refeição foi removida com sucesso."
         });
+        // A atualização da UI será feita pelo onSnapshot, não é preciso fazer setMealEntries aqui.
     } catch(error: any) {
         toast({
             title: "Erro ao remover refeição",
